@@ -1,12 +1,58 @@
 import { Measure } from "../numberMeasure";
 
-import { meters, kilograms, seconds, amperes, kelvin, moles, candelas, radians, steradians, bits } from "../../unit";
-import { hertz, newtons, pascals, joules, watts, volts, coulombs, farads, ohms, siemens, henrys, webers, teslas, sieverts, katals, lumens, luxes } from "../../unit/metric";
-import { liters, speedOfLight, bars, atmospheres, torrs } from "../../unit/other";
+import {
+  meters,
+  kilograms,
+  seconds,
+  amperes,
+  kelvin,
+  moles,
+  candelas,
+  radians,
+  steradians,
+  bits,
+} from "../../unit";
+import {
+  hertz,
+  newtons,
+  pascals,
+  joules,
+  watts,
+  volts,
+  coulombs,
+  farads,
+  ohms,
+  siemens,
+  henrys,
+  webers,
+  teslas,
+  sieverts,
+  katals,
+  lumens,
+  luxes,
+} from "../../unit/metric";
+import {
+  liters,
+  speedOfLight,
+  bars,
+  atmospheres,
+  torrs,
+} from "../../unit/other";
 import { bytes } from "../../unit/memory";
-import { minutes, hours, days, inches, feet, yards, miles, nauticalMiles, acres, pounds, ounces } from "../../unit/common";
+import {
+  minutes,
+  hours,
+  days,
+  inches,
+  feet,
+  yards,
+  miles,
+  nauticalMiles,
+  acres,
+  pounds,
+  ounces,
+} from "../../unit/common";
 import { degrees, arcMinutes, arcSeconds } from "../../unit/angle";
-
 
 import {
   yotta,
@@ -43,19 +89,17 @@ import {
 } from "../../unit/memory";
 import { PrefixFn } from "../genericMeasureUtils";
 
-
 export type PrefixWithIdentifiers = {
-  fn: PrefixFn,
-  symbol: string,
-  name: string
-}
+  fn: PrefixFn;
+  symbol: string;
+  name: string;
+};
 
 export type MeasureWithIdentifiers = {
-  measure: Measure<any, any>,
-  symbol: string,
-  name: string
-}
-
+  measure: Measure<any, any>;
+  symbol: string;
+  name: string;
+};
 
 const prefixesObject = {
   // metric
@@ -89,13 +133,9 @@ const prefixesObject = {
   exbi: { fn: exbi, symbol: "Ei", name: "exbi" },
   zebi: { fn: zebi, symbol: "Zi", name: "zebi" },
   yobi: { fn: yobi, symbol: "Yi", name: "yobi" },
-} as const
+} as const;
 
 const prefixes: PrefixWithIdentifiers[] = Object.values(prefixesObject);
-
-
-
-
 
 const measuresObject = {
   meters: { measure: meters, symbol: "m", name: "meter" },
@@ -138,14 +178,18 @@ const measuresObject = {
   feet: { measure: feet, symbol: "ft", name: "foot" },
   yards: { measure: yards, symbol: "yd", name: "yard" },
   miles: { measure: miles, symbol: "mi", name: "mile" },
-  nauticalMiles: { measure: nauticalMiles, symbol: "nmi", name: "nautical mile" },
+  nauticalMiles: {
+    measure: nauticalMiles,
+    symbol: "nmi",
+    name: "nautical mile",
+  },
   acres: { measure: acres, symbol: "acre", name: "acre" },
   pounds: { measure: pounds, symbol: "lb", name: "pound" },
   ounces: { measure: ounces, symbol: "oz", name: "ounce" },
   degrees: { measure: degrees, symbol: "deg", name: "degree" },
   arcMinutes: { measure: arcMinutes, symbol: "arcmin", name: "arcminute" },
   arcSeconds: { measure: arcSeconds, symbol: "arcsec", name: "arcsecond" },
-} as const
+} as const;
 
 const measures: MeasureWithIdentifiers[] = Object.values(measuresObject);
 
@@ -154,81 +198,179 @@ const measures: MeasureWithIdentifiers[] = Object.values(measuresObject);
  * However if it has no measure, then any measure is possible.
  */
 export type CompoundUnitPrediction = {
-  prefix?: PrefixWithIdentifiers
-  measure?: MeasureWithIdentifiers
-}
+  prefix?: PrefixWithIdentifiers;
+  measure?: MeasureWithIdentifiers;
+};
 
-export type CompoundUnitPredictionWithDenominator = { unit: CompoundUnitPrediction, over?: CompoundUnitPrediction, score?: number, leftovers?: string }
+export type CompoundUnitPredictionWithDenominator = {
+  unit: CompoundUnitPrediction;
+  over?: CompoundUnitPrediction;
+  score?: number;
+  leftovers?: string;
+};
 
-const PERFECT_PREFIX_SYMBOL_MATCH = 5
-const PERFECT_PREFIX_NAME_MATCH = 10
-const PERFECT_MEASURE_SYMBOL_MATCH = 5
-const PERFECT_MEASURE_NAME_MATCH = 10
+const PERFECT_PREFIX_SYMBOL_MATCH = 5;
+const PERFECT_PREFIX_NAME_MATCH = 10;
+const PERFECT_MEASURE_SYMBOL_MATCH = 5;
+const PERFECT_MEASURE_NAME_MATCH = 10;
 
-const PARTIAL_PREFIX_SYMBOL_MATCH = 1.5
-const PARTIAL_PREFIX_NAME_MATCH = 2
-const PARTIAL_MEASURE_SYMBOL_MATCH = 1.8
-const PARTIAL_MEASURE_NAME_MATCH = 2
+const PARTIAL_PREFIX_SYMBOL_MATCH = 1.5;
+const PARTIAL_PREFIX_NAME_MATCH = 2;
+const PARTIAL_MEASURE_SYMBOL_MATCH = 1.8;
+const PARTIAL_MEASURE_NAME_MATCH = 2;
 
-const POWER_MATCH_SCORE = 1.5
+const MAX_LEVENSHTEIN_DISTANCE = 3;
 
+const END_ON_PREFIX_PENALTY = 0.1;
 
-function mapLinear(x: number, in_min: number, in_max: number, out_min: number, out_max: number) {
-  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+const POWER_MATCH_SCORE = 1.5;
+
+function mapLinear(
+  x: number,
+  in_min: number,
+  in_max: number,
+  out_min: number,
+  out_max: number
+) {
+  return ((x - in_min) * (out_max - out_min)) / (in_max - in_min) + out_min;
 }
 
 /**
  * Checks if the 'rest' string starts with any amount of the 'potential match' string.
  * Returns the longest matching prefix, or null if no match is found.
- * 
+ *
  * Score is based on the perfectMatchScore if a perfect match, or partialMatchScore scaled from 1 to partialMatchScore based on the amount of matching.
- * 
+ *
  * TODO: Score based on levenshtein distance
  */
-function getPartialMatch(rest: string, potentialMatch: string, allowPlural: boolean, perfectMatchScore: number, partialMatchScore: number): { score: number, match: string } {
+function getPartialMatch(
+  rest: string,
+  potentialMatch: string,
+  testingMeasure: boolean,
+  testingName: boolean,
+  perfectMatchScore: number,
+  partialMatchScore: number
+): { score: number; match: string } {
   // const lowerRest = rest.toLowerCase();
   // const lowerPotential = potentialMatch.toLowerCase();
 
-  // Perfect prefix plural match
-  if (allowPlural) {
+  // Perfect prefix plural match, only for the measure
+  if (testingMeasure) {
     const pluralMatch = `${potentialMatch}s`;
     if (rest.startsWith(pluralMatch)) {
-      console.log(`perfect match plural ${rest} to ${potentialMatch} scored as ${perfectMatchScore}`)
-      return { score: perfectMatchScore, match: rest.slice(0, pluralMatch.length) };
+      console.log(
+        `${testingMeasure ? "measure" : "prefix"} ${testingName ? "name" : "symbol"}: perfect plural prefix match ${rest} to ${potentialMatch} with score ${perfectMatchScore}`
+      );
+
+      return {
+        score: perfectMatchScore,
+        match: rest.slice(0, pluralMatch.length),
+      };
     }
   }
 
   // Perfect prefix match
   if (rest.startsWith(potentialMatch)) {
-    console.log(`perfect match ${rest} to ${potentialMatch} scored as ${perfectMatchScore}`)
-    return { score: perfectMatchScore, match: rest.slice(0, potentialMatch.length) };
+    console.log(
+      `${testingMeasure ? "measure" : "prefix"} ${testingName ? "name" : "symbol"}: perfect prefix match ${rest} to ${potentialMatch} with score ${perfectMatchScore}`
+    );
+    return {
+      score: perfectMatchScore,
+      match: rest.slice(0, potentialMatch.length),
+    };
   }
 
   // Partial prefix match
   for (let i = potentialMatch.length; i > 0; i--) {
     if (rest.startsWith(potentialMatch.slice(0, i))) {
-      const score = mapLinear(i, 0, potentialMatch.length, 1, partialMatchScore)
-
-      console.log(`partial match ${rest} to ${potentialMatch} scored as ${score}`)
+      const score = mapLinear(
+        i,
+        0,
+        potentialMatch.length,
+        1,
+        partialMatchScore
+      );
+      console.log(
+        `${testingMeasure ? "measure" : "prefix"} ${testingName ? "name" : "symbol"}: partial prefix match ${rest} to ${potentialMatch} with subset ${potentialMatch.slice(0, i)} with score ${score}`
+      );
 
       return { score, match: rest.slice(0, i) };
     }
   }
 
-  // TODO: Also compare the levenshtein distance and allow for typos.
+  // Compare the levenshtein distance of the entire rest, and if it's low, allow that
+  const levenshteinDistance = levenshtein(rest, potentialMatch);
+
+  if (testingMeasure && levenshteinDistance <= MAX_LEVENSHTEIN_DISTANCE) {
+    console.log(
+      `${testingMeasure ? "measure" : "prefix"} ${testingName ? "name" : "symbol"}: levenshteinDistance ${rest} to ${potentialMatch} is ${levenshteinDistance}`
+    );
+    // Remap the distance to a score between 1 and the partialMatchScore
+    const score = mapLinear(
+      levenshteinDistance,
+      MAX_LEVENSHTEIN_DISTANCE,
+      0,
+      0,
+      partialMatchScore
+    );
+
+    // Consume the rest of the string
+    return { score, match: rest };
+  }
 
   // No match
-  return { score: 0, match: '' }
+  return { score: 0, match: "" };
 }
 
-function bestMatch(a: { score: number, match: string }, b: { score: number, match: string }) {
-  if (a.score > b.score) return a
-  return b
+function levenshtein(
+  a: string,
+  b: string,
+  insertCost: number = 3,
+  deleteCost: number = 2,
+  substituteCost: number = 1
+): number {
+  const an = a ? a.length : 0;
+  const bn = b ? b.length : 0;
+
+  if (an === 0) {
+    return bn * insertCost;
+  }
+  if (bn === 0) {
+    return an * deleteCost;
+  }
+
+  const matrix = new Array<number[]>(bn + 1);
+  for (let i = 0; i <= bn; ++i) {
+    let row = (matrix[i] = new Array<number>(an + 1));
+    row[0] = i * insertCost;
+  }
+
+  const firstRow = matrix[0];
+  for (let j = 1; j <= an; ++j) {
+    firstRow[j] = j * deleteCost;
+  }
+
+  for (let i = 1; i <= bn; ++i) {
+    for (let j = 1; j <= an; ++j) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + substituteCost, // substitution
+          matrix[i][j - 1] + insertCost, // insertion
+          matrix[i - 1][j] + deleteCost // deletion
+        );
+      }
+    }
+  }
+
+  return matrix[bn][an];
 }
 
 function partialParse(
   partial: CompoundUnitPredictionWithDenominator,
   rest: string,
+  key: "unit" | "over",
   depth: number
 ): CompoundUnitPredictionWithDenominator[] {
   // All the combined results of this path
@@ -236,43 +378,113 @@ function partialParse(
   const restNoSpacesAtStart = rest.replace(/^ */, "");
 
   if (restNoSpacesAtStart.length === 0) {
-    return [partial]
+    return [partial];
   }
+  console.log(`parsing ${rest} with partial`, partial);
 
-  // If the partial does not contain any prefix, then we can branch via prefix
-  if (!partial.unit.prefix) {
+  // If the partial does not contain any prefix, or measure yet
+  if (!partial[key]?.prefix && !partial[key]?.measure) {
     // For each prefix, check if the rest matches, and if so, add the results of the recursive parse
     for (const prefix of prefixes) {
-      const prefixMatch = bestMatch(
-        getPartialMatch(restNoSpacesAtStart, prefix.name, false, PERFECT_PREFIX_NAME_MATCH, PARTIAL_PREFIX_NAME_MATCH),
-        getPartialMatch(restNoSpacesAtStart, prefix.symbol, false, PERFECT_PREFIX_SYMBOL_MATCH, PARTIAL_PREFIX_SYMBOL_MATCH)
-      )
+      const prefixNameMatch = getPartialMatch(
+        restNoSpacesAtStart,
+        prefix.name,
+        false,
+        true,
+        PERFECT_PREFIX_NAME_MATCH,
+        PARTIAL_PREFIX_NAME_MATCH
+      );
 
-      if (prefixMatch) {
-        results.push(...partialParse(
-          { ...partial, unit: { ...partial.unit, prefix }, score: (partial.score ?? 1) * prefixMatch.score },
-          restNoSpacesAtStart.slice(prefixMatch.match.length),
-          depth + 1
-        ));
+      if (prefixNameMatch.score > 0) {
+        results.push(
+          ...partialParse(
+            {
+              ...partial,
+              [key]: { ...partial[key], prefix },
+              score: (partial.score ?? 1) * prefixNameMatch.score,
+            },
+            restNoSpacesAtStart.slice(prefixNameMatch.match.length),
+            key,
+            depth + 1
+          )
+        );
+      }
+
+      const prefixSymbolMatch = getPartialMatch(
+        restNoSpacesAtStart,
+        prefix.symbol,
+        false,
+        false,
+        PERFECT_PREFIX_SYMBOL_MATCH,
+        PARTIAL_PREFIX_SYMBOL_MATCH
+      );
+
+      if (prefixSymbolMatch.score > 0) {
+        results.push(
+          ...partialParse(
+            {
+              ...partial,
+              [key]: { ...partial[key], prefix },
+              score: (partial.score ?? 1) * prefixSymbolMatch.score,
+            },
+            restNoSpacesAtStart.slice(prefixSymbolMatch.match.length),
+            key,
+            depth + 1
+          )
+        );
       }
     }
   }
 
   // If the partial does not contain any measure, then we can branch via measure
-  if (!partial.unit.measure) {
+  if (!partial[key]?.measure) {
     for (const measure of measures) {
+      const measureNameMatch = getPartialMatch(
+        restNoSpacesAtStart,
+        measure.name,
+        true,
+        true,
+        PERFECT_MEASURE_NAME_MATCH,
+        PARTIAL_MEASURE_NAME_MATCH
+      );
 
-      const measureMatch = bestMatch(
-        getPartialMatch(restNoSpacesAtStart, measure.name, true, PERFECT_MEASURE_NAME_MATCH, PARTIAL_MEASURE_NAME_MATCH),
-        getPartialMatch(restNoSpacesAtStart, measure.symbol, true, PERFECT_MEASURE_SYMBOL_MATCH, PARTIAL_MEASURE_SYMBOL_MATCH)
-      )
+      if (measureNameMatch.score > 0) {
+        results.push(
+          ...partialParse(
+            {
+              ...partial,
+              [key]: { ...partial[key], measure },
+              score: (partial.score ?? 1) * measureNameMatch.score,
+            },
+            restNoSpacesAtStart.slice(measureNameMatch.match.length),
+            key,
+            depth + 1
+          )
+        );
+      }
 
-      if (measureMatch) {
-        results.push(...partialParse(
-          { ...partial, unit: { ...partial.unit, measure }, score: (partial.score ?? 1) * measureMatch.score },
-          restNoSpacesAtStart.slice(measureMatch.match.length),
-          depth + 1
-        ));
+      const measureSymbolMatch = getPartialMatch(
+        restNoSpacesAtStart,
+        measure.symbol,
+        false,
+        false,
+        PERFECT_MEASURE_SYMBOL_MATCH,
+        PARTIAL_MEASURE_SYMBOL_MATCH
+      );
+
+      if (measureSymbolMatch.score > 0) {
+        results.push(
+          ...partialParse(
+            {
+              ...partial,
+              [key]: { ...partial[key], measure },
+              score: (partial.score ?? 1) * measureSymbolMatch.score,
+            },
+            restNoSpacesAtStart.slice(measureSymbolMatch.match.length),
+            key,
+            depth + 1
+          )
+        );
       }
     }
   }
@@ -283,101 +495,146 @@ function partialParse(
   if (powerMatch) {
     const power = parseInt(powerMatch[1], 10);
 
-    let measureToApplyTo: Measure<any, any> | null = null
-    let measureWithSymbols: MeasureWithIdentifiers | null = null
-
-    if (partial.over && partial.over.measure) {
-      measureToApplyTo = partial.over.measure.measure
-      measureWithSymbols = partial.over.measure
-    } else if (partial.unit.measure) {
-      measureToApplyTo = partial.unit.measure.measure
-      measureWithSymbols = partial.unit.measure
-    }
+    let measureToApplyTo = partial[key]?.measure?.measure ?? null;
+    let measureWithSymbols = partial[key]?.measure ?? null;
 
     if (measureToApplyTo && measureWithSymbols) {
       for (let i = 1; i < power; i++) {
         measureToApplyTo = measureToApplyTo.times(measureToApplyTo);
       }
-      results.push(...partialParse(
-        {
-          ...partial, over: {
-            ...partial.over, measure: {
-              measure: measureToApplyTo,
-              name: `${measureWithSymbols.name}^${power}`,
-              symbol: `${measureWithSymbols.symbol}^${power}`,
-            }
-          }, score: (partial.score ?? 1) * POWER_MATCH_SCORE
-        },
-        restNoSpacesAtStart.slice(powerMatch[0].length),
-        depth + 1
-      ));
+      results.push(
+        ...partialParse(
+          {
+            ...partial,
+            [key]: {
+              ...partial[key],
+              measure: {
+                measure: measureToApplyTo,
+                name: `${measureWithSymbols.name}^${power}`,
+                symbol: `${measureWithSymbols.symbol}^${power}`,
+              },
+            },
+            score: (partial.score ?? 1) * POWER_MATCH_SCORE,
+          },
+          restNoSpacesAtStart.slice(powerMatch[0].length),
+          key,
+          depth + 1
+        )
+      );
     }
   }
 
   if (results.length === 0) {
     // If we've parsed everything but there are still leftovers, this isn't a correct interpretation
     if (rest.length > 0) {
-      return []
+      return [];
     }
 
-    return [partial]
+    return [partial];
   }
 
-  return results.sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+  // Deduplicate results based on the names of the unit prefix and measure
+  const uniqueResults = results.reduce((acc, current) => {
+    const key = `${current.unit.prefix?.name || ""}-${current.unit.measure?.name || ""}-${current.over?.prefix?.name || ""}-${current.over?.measure?.name || ""}`;
+    if (!acc.has(key) || (current.score ?? 0) > (acc.get(key)?.score ?? 0)) {
+      acc.set(key, current);
+    }
+    return acc;
+  }, new Map<string, CompoundUnitPredictionWithDenominator>());
+
+  const uniqueResultsArray: CompoundUnitPredictionWithDenominator[] = [];
+
+  for (const result of Array.from(uniqueResults.values())) {
+    // If the prediction ends on a prefix match, penalise it
+    if (
+      (result.unit.prefix && !result.unit.measure) ||
+      (result.over && result.over.prefix && !result.over.measure)
+    ) {
+      result.score = (result.score ?? 1) * END_ON_PREFIX_PENALTY;
+    }
+    uniqueResultsArray.push(result);
+  }
+
+  // Sort the results by their scores
+  return uniqueResultsArray.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
 }
 
-export function parseCompoundUnit(input: string): CompoundUnitPredictionWithDenominator[] {
-
+export function parseCompoundUnit(
+  input: string
+): CompoundUnitPredictionWithDenominator[] {
   // First check for a slash
-  const slashIndex = input.indexOf('/');
+  const slashIndex = input.indexOf("/");
   if (slashIndex !== -1) {
     const numeratorString = input.slice(0, slashIndex);
     const denominatorString = input.slice(slashIndex + 1);
-    return partialParse({ unit: {} }, numeratorString, 0).flatMap(num =>
-      partialParse({ ...num, over: {} }, denominatorString, 0)
+
+    return partialParse({ unit: {} }, numeratorString, "unit", 0).flatMap(
+      (num) => partialParse({ ...num, over: {} }, denominatorString, "over", 0)
     );
   }
 
   // Check for a full ' per '
-  const perIndex = input.indexOf(' per ');
+  const perIndex = input.indexOf(" per ");
   if (perIndex !== -1) {
     const numeratorString = input.slice(0, perIndex);
     const denominatorString = input.slice(perIndex + 5);
-    return partialParse({ unit: {} }, numeratorString, 0).flatMap(num =>
-      partialParse({ ...num, over: {} }, denominatorString, 0)
+    return partialParse({ unit: {} }, numeratorString, "unit", 0).flatMap(
+      (num) => partialParse({ ...num, over: {} }, denominatorString, "over", 0)
     );
   }
 
-  // Otherwise begin a partial parse
-  return partialParse({ unit: {} }, input, 0);
+  // Otherwise begin a partial parse without a denominator
+  return partialParse({ unit: {} }, input, "unit", 0);
 }
 
-
-
-
-
-
-const corpus: { in: string, options: CompoundUnitPredictionWithDenominator[] }[] = [
-  // { in: "mil", options: [{ unit: { prefix: prefixesObject.milli } }] },
-  // { in: "m", options: [
-  //   { unit: { prefix: prefixesObject.milli } },
-  //   { unit: { measure: measuresObject.meters } },
-  //   { unit: { measure: measuresObject.minutes } },
-  //   { unit: { measure: measuresObject.miles } },
-  //   { unit: { measure: measuresObject.moles } },
-  // ] },
+const corpus: {
+  in: string;
+  options: CompoundUnitPredictionWithDenominator[];
+}[] = [
+  // {
+  //   in: "mil",
+  //   options: [
+  //     { unit: { prefix: prefixesObject.milli } },
+  //     { unit: { measure: measuresObject.miles } },
+  //   ],
+  // },
   {
-    in: "mm", options: [
-      { unit: { prefix: prefixesObject.milli, measure: measuresObject.meters } },
-    ]
+    in: "ml",
+    options: [
+      { unit: { prefix: prefixesObject.milli } },
+      { unit: { measure: measuresObject.miles } },
+    ],
   },
-
-
+  // {
+  //   in: "m",
+  //   options: [
+  //     { unit: { prefix: prefixesObject.milli } },
+  //     { unit: { measure: measuresObject.meters } },
+  //   ],
+  // },
+  // {
+  //   in: "mm",
+  //   options: [
+  //     {
+  //       unit: { prefix: prefixesObject.milli, measure: measuresObject.meters },
+  //     },
+  //   ],
+  // },
+  // {
+  //   in: "km/h",
+  //   options: [
+  //     {
+  //       unit: { prefix: prefixesObject.kilo, measure: measuresObject.meters },
+  //     },
+  //   ],
+  // },
 ];
 
-
-function stringRepr(result: CompoundUnitPredictionWithDenominator) {
-  return `${result.unit.prefix ? result.unit.prefix.name : ''}${result.unit.measure ? result.unit.measure.name : ''}${result.over ? `${result.over.prefix ? result.over.prefix.name : ''}${result.over.measure ? result.over.measure.name : ''}` : ''} (${Math.round((result.score ?? 1) * 10) / 10})`
+function stringRepr(
+  result: CompoundUnitPredictionWithDenominator,
+  withScore = false
+) {
+  return `${result.unit.prefix ? result.unit.prefix.name : ""}${result.unit.measure ? result.unit.measure.name : ""}s${result.over ? `/${result.over.prefix ? result.over.prefix.name : ""}${result.over.measure ? result.over.measure.name : ""}` : ""}${withScore ? ` (${Math.round((result.score ?? 1) * 10) / 10})` : ""}`;
 }
 
 describe(`parser`, () => {
@@ -386,12 +643,14 @@ describe(`parser`, () => {
       const results = parseCompoundUnit(input);
 
       console.log(`Input: "${input}"`);
-      console.log(`Possibilities: `, results.map(result => stringRepr(result)))
+      console.log(
+        `Possibilities: `,
+        results.map((result) => stringRepr(result, true))
+      );
 
-
-      options.forEach(expected => {
-        const matchingResult = results.find(r =>
-          stringRepr(r) === stringRepr(expected)
+      options.forEach((expected) => {
+        const matchingResult = results.find(
+          (r) => stringRepr(r) === stringRepr(expected)
         );
 
         expect(matchingResult).toBeDefined();
