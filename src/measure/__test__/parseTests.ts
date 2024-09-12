@@ -214,6 +214,8 @@ const PERFECT_PREFIX_NAME_MATCH = 10;
 const PERFECT_MEASURE_SYMBOL_MATCH = 5;
 const PERFECT_MEASURE_NAME_MATCH = 10;
 
+const CASE_MISMATCH_PENALTY = 0.8;
+
 const PARTIAL_PREFIX_SYMBOL_MATCH = 1.5;
 const PARTIAL_PREFIX_NAME_MATCH = 2;
 const PARTIAL_MEASURE_SYMBOL_MATCH = 1.8;
@@ -376,6 +378,7 @@ function partialParse(
   // All the combined results of this path
   const results: CompoundUnitPredictionWithDenominator[] = [];
   const restNoSpacesAtStart = rest.replace(/^ */, "");
+  const restLowerCase = restNoSpacesAtStart.toLowerCase();
 
   if (restNoSpacesAtStart.length === 0) {
     return [partial];
@@ -386,6 +389,7 @@ function partialParse(
   if (!partial[key]?.prefix && !partial[key]?.measure) {
     // For each prefix, check if the rest matches, and if so, add the results of the recursive parse
     for (const prefix of prefixes) {
+      // Matching cases
       const prefixNameMatch = getPartialMatch(
         restNoSpacesAtStart,
         prefix.name,
@@ -428,6 +432,61 @@ function partialParse(
               score: (partial.score ?? 1) * prefixSymbolMatch.score,
             },
             restNoSpacesAtStart.slice(prefixSymbolMatch.match.length),
+            key,
+            depth + 1
+          )
+        );
+      }
+
+      // Case insensitive matches
+      const prefixNameMatchCaseInsensitive = getPartialMatch(
+        restLowerCase,
+        prefix.name.toLowerCase(),
+        false,
+        true,
+        PERFECT_PREFIX_NAME_MATCH,
+        PARTIAL_PREFIX_NAME_MATCH
+      );
+
+      if (prefixNameMatchCaseInsensitive.score > 0) {
+        results.push(
+          ...partialParse(
+            {
+              ...partial,
+              [key]: { ...partial[key], prefix },
+              score:
+                (partial.score ?? 1) *
+                prefixNameMatchCaseInsensitive.score *
+                CASE_MISMATCH_PENALTY,
+            },
+            restLowerCase.slice(prefixNameMatchCaseInsensitive.match.length),
+            key,
+            depth + 1
+          )
+        );
+      }
+
+      const prefixSymbolMatchCaseInsensitive = getPartialMatch(
+        restLowerCase,
+        prefix.symbol.toLowerCase(),
+        false,
+        false,
+        PERFECT_PREFIX_SYMBOL_MATCH,
+        PARTIAL_PREFIX_SYMBOL_MATCH
+      );
+
+      if (prefixSymbolMatchCaseInsensitive.score > 0) {
+        results.push(
+          ...partialParse(
+            {
+              ...partial,
+              [key]: { ...partial[key], prefix },
+              score:
+                (partial.score ?? 1) *
+                prefixSymbolMatchCaseInsensitive.score *
+                CASE_MISMATCH_PENALTY,
+            },
+            restLowerCase.slice(prefixSymbolMatchCaseInsensitive.match.length),
             key,
             depth + 1
           )
@@ -481,6 +540,61 @@ function partialParse(
               score: (partial.score ?? 1) * measureSymbolMatch.score,
             },
             restNoSpacesAtStart.slice(measureSymbolMatch.match.length),
+            key,
+            depth + 1
+          )
+        );
+      }
+
+      // Case insensitive matches
+      const measureNameMatchCaseInsensitive = getPartialMatch(
+        restLowerCase,
+        measure.name.toLowerCase(),
+        true,
+        true,
+        PERFECT_MEASURE_NAME_MATCH,
+        PARTIAL_MEASURE_NAME_MATCH
+      );
+
+      if (measureNameMatchCaseInsensitive.score > 0) {
+        results.push(
+          ...partialParse(
+            {
+              ...partial,
+              [key]: { ...partial[key], measure },
+              score:
+                (partial.score ?? 1) *
+                measureNameMatchCaseInsensitive.score *
+                CASE_MISMATCH_PENALTY,
+            },
+            restLowerCase.slice(measureNameMatchCaseInsensitive.match.length),
+            key,
+            depth + 1
+          )
+        );
+      }
+
+      const measureSymbolMatchCaseInsensitive = getPartialMatch(
+        restLowerCase,
+        measure.symbol.toLocaleLowerCase(),
+        false,
+        false,
+        PERFECT_MEASURE_SYMBOL_MATCH,
+        PARTIAL_MEASURE_SYMBOL_MATCH
+      );
+
+      if (measureSymbolMatchCaseInsensitive.score > 0) {
+        results.push(
+          ...partialParse(
+            {
+              ...partial,
+              [key]: { ...partial[key], measure },
+              score:
+                (partial.score ?? 1) *
+                measureSymbolMatchCaseInsensitive.score *
+                CASE_MISMATCH_PENALTY,
+            },
+            restLowerCase.slice(measureSymbolMatchCaseInsensitive.match.length),
             key,
             depth + 1
           )
@@ -601,8 +715,9 @@ const corpus: {
   {
     in: "ml",
     options: [
-      { unit: { prefix: prefixesObject.milli } },
-      { unit: { measure: measuresObject.miles } },
+      {
+        unit: { prefix: prefixesObject.milli, measure: measuresObject.liters },
+      },
     ],
   },
   // {
