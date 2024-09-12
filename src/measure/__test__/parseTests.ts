@@ -190,6 +190,8 @@ const measuresObject = {
   degrees: { measure: degrees, symbol: "deg", name: "degree" },
   arcMinutes: { measure: arcMinutes, symbol: "arcmin", name: "arcminute" },
   arcSeconds: { measure: arcSeconds, symbol: "arcsec", name: "arcsecond" },
+
+  // Compound units
 } as const;
 
 const measures: MeasureWithIdentifiers[] = Object.values(measuresObject);
@@ -232,7 +234,7 @@ const PARTIAL_MEASURE_NAME_MATCH = 2;
 const MAX_LEVENSHTEIN_DISTANCE = 3;
 
 const END_ON_PREFIX_PENALTY = 0.1;
-const CASE_MISMATCH_PENALTY = 0.3;
+const CASE_MISMATCH_PENALTY = 0.283;
 
 const POWER_MATCH_SCORE = 1.5;
 
@@ -661,6 +663,10 @@ function partialParse(
     return [partial];
   }
 
+  return postProcessOptions(results);
+}
+
+function postProcessOptions(results: CompoundUnitPredictionWithDenominator[]) {
   // Deduplicate results based on the names of the unit prefix and measure
   const uniqueResults = results.reduce((acc, current) => {
     const key = `${current.unit.prefix?.name || ""}-${current.unit.measure?.name || ""}-${current.over?.prefix?.name || ""}-${current.over?.measure?.name || ""}`;
@@ -679,6 +685,11 @@ function partialParse(
       (result.over && result.over.prefix && !result.over.measure)
     ) {
       result.score = (result.score ?? 1) * END_ON_PREFIX_PENALTY;
+    }
+
+    // If the result is a prefix only on the numerator and a measure on the denominator, dump the prediction
+    if (result.unit.prefix && !result.unit.measure && result.over?.measure) {
+      continue;
     }
     uniqueResultsArray.push(result);
   }
@@ -757,26 +768,6 @@ const corpus: {
     ],
   },
   {
-    in: "mph",
-    options: [
-      {
-        unit: { measure: measuresObject.miles },
-        over: { measure: measuresObject.hours },
-        top: 1,
-      },
-    ],
-  },
-  {
-    in: "kph",
-    options: [
-      {
-        unit: { prefix: prefixesObject.kilo, measure: measuresObject.meters },
-        over: { measure: measuresObject.hours },
-        top: 1,
-      },
-    ],
-  },
-  {
     in: "miles per hour",
     options: [
       {
@@ -830,6 +821,45 @@ const corpus: {
       },
     ],
   },
+  {
+    in: "kg",
+    options: [
+      {
+        unit: { measure: measuresObject.kilograms },
+      },
+    ],
+  },
+  {
+    in: "mbps",
+    options: [
+      {
+        unit: { prefix: prefixesObject.mega, measure: measuresObject.bits },
+        over: { measure: measuresObject.seconds },
+      },
+    ],
+  },
+
+  // iffy
+  // {
+  //   in: "mph",
+  //   options: [
+  //     {
+  //       unit: { measure: measuresObject.miles },
+  //       over: { measure: measuresObject.hours },
+  //       top: 1,
+  //     },
+  //   ],
+  // },
+  // {
+  //   in: "kph",
+  //   options: [
+  //     {
+  //       unit: { prefix: prefixesObject.kilo, measure: measuresObject.meters },
+  //       over: { measure: measuresObject.hours },
+  //       top: 1,
+  //     },
+  //   ],
+  // },
 ];
 
 function stringRepr(
@@ -889,13 +919,7 @@ function stringRepr(
     }
   }
 
-  if (withScore) {
-    return `${res} (${Math.round((result.score ?? 0) * 10) / 10})`;
-  }
-
-  return res;
-
-  //return `${result.unit.prefix ? result.unit.prefix.name : ""}${result.unit.measure ? `${result.unit.measure.name}s` : ""}${result.over ? `/${result.over.prefix ? result.over.prefix.name : ""}${result.over.measure ? result.over.measure.name : ""}` : ""}${withScore ? ` (${Math.round((result.score ?? 1) * 10) / 10})` : ""}`;
+  return `${result.unit.prefix ? result.unit.prefix.name : ""}${result.unit.measure ? `${result.unit.measure.name}${result.unit.exponent ? `^${result.unit.exponent}` : ""}s` : ""}${result.over ? `/${result.over.prefix ? result.over.prefix.name : ""}${result.over.measure ? `${result.over.measure.name}${result.over.exponent ? `^${result.over.exponent}` : ""}` : ""}` : ""} - ${res}${withScore ? ` (${Math.round((result.score ?? 1) * 10) / 10})` : ""}`;
 }
 
 describe(`parser`, () => {

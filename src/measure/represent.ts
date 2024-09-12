@@ -283,7 +283,7 @@ const DIGITS = {
   '9': '⁹',
 }
 
-function superscriptNumber(s: number) {
+export function superscriptNumber(s: number) {
   return String(s)
     .split('')
     .map((ch: string) => {
