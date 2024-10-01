@@ -1,50 +1,50 @@
-import { GenericMeasure } from "../measure/genericMeasure";
-import { Measure } from "../measure/numberMeasure";
-import { DimensionlessUnit } from "../measure/unitTypeArithmetic";
-import { SIUnitSystem, radians } from "./base";
-import { Length, PlaneAngle } from "./quantities";
+import { GenericMeasure } from "../measure/genericMeasure"
+import { Measure } from "../measure/numberMeasure"
+import { DimensionlessUnit } from "../measure/unitTypeArithmetic"
+import { SIUnitSystem, radians } from "./base"
+import { Length, PlaneAngle } from "./quantities"
 
 /**
  * `Math.acos` for `number` measures.
  * @param x a dimensionless value
  * @returns an angle
  */
-export const acos = wrapInverseTrigFn(Math.acos);
+export const acos = wrapInverseTrigFn(Math.acos)
 
 /**
  * `Math.asin` for `number` measures.
  * @param x a dimensionless value
  * @returns an angle
  */
-export const asin = wrapInverseTrigFn(Math.asin);
+export const asin = wrapInverseTrigFn(Math.asin)
 
 /**
  * `Math.atan` for `number` measures.
  * @param x a dimensionless value
  * @returns an angle
  */
-export const atan = wrapInverseTrigFn(Math.atan);
+export const atan = wrapInverseTrigFn(Math.atan)
 
 /**
  * `Math.cos` for `number` measures.
  * @param x an angle
  * @returns a dimensionless value
  */
-export const cos = wrapTrigFn(Math.cos);
+export const cos = wrapTrigFn(Math.cos)
 
 /**
  * `Math.sin` for `number` measures.
  * @param x an angle
  * @returns a dimensionless value
  */
-export const sin = wrapTrigFn(Math.sin);
+export const sin = wrapTrigFn(Math.sin)
 
 /**
  * `Math.tan` for `number` measures.
  * @param x an angle
  * @returns a dimensionless value
  */
-export const tan = wrapTrigFn(Math.tan);
+export const tan = wrapTrigFn(Math.tan)
 
 /**
  * `Math.atan2` for `number` measures.
@@ -53,15 +53,15 @@ export const tan = wrapTrigFn(Math.tan);
  * @returns an angle
  */
 export function atan2(y: Length, x: Length): PlaneAngle {
-    return Measure.of(Math.atan2(y.value, x.value), radians);
+  return Measure.of(Math.atan2(y.value, x.value), radians)
 }
 
-type Dimensionless = GenericMeasure<number, SIUnitSystem, DimensionlessUnit<SIUnitSystem>>;
+type Dimensionless = GenericMeasure<number, SIUnitSystem, DimensionlessUnit<SIUnitSystem>>
 
 function wrapTrigFn(f: (x: number) => number): (angle: PlaneAngle) => Dimensionless {
-    return angle => Measure.dimensionless(SIUnitSystem, f(angle.value));
+  return angle => Measure.dimensionless(SIUnitSystem, f(angle.value))
 }
 
 function wrapInverseTrigFn(f: (x: number) => number): (angle: Dimensionless) => PlaneAngle {
-    return angle => Measure.of(f(angle.value), radians);
+  return angle => Measure.of(f(angle.value), radians)
 }

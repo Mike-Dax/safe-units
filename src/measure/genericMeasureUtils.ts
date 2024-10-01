@@ -1,27 +1,27 @@
-import { GenericMeasure } from "./genericMeasure";
-import { Unit } from "./unitTypeArithmetic";
+import { GenericMeasure } from "./genericMeasure"
+import { Unit } from "./unitTypeArithmetic"
 
 /** A function which applies a symbol prefix and multiplier to a given measure. */
 export type PrefixFn<N = number> = <Basis, U extends Unit<Basis>>(
-    measure: GenericMeasure<N, Basis, U>,
-) => GenericMeasure<N, Basis, U>;
+  measure: GenericMeasure<N, Basis, U>,
+) => GenericMeasure<N, Basis, U>
 
 /** A function which transforms a single measure into another measure with the same unit. */
 export type UnaryFn<N = number> = <Basis, U extends Unit<Basis>>(
-    x: GenericMeasure<N, Basis, U>,
-) => GenericMeasure<N, Basis, U>;
+  x: GenericMeasure<N, Basis, U>,
+) => GenericMeasure<N, Basis, U>
 
 /** A function which transforms two measures with same unit into a single measure with the same unit. */
 export type BinaryFn<N = number> = <Basis, U extends Unit<any>>(
-    left: GenericMeasure<N, Basis, U>,
-    right: GenericMeasure<N, Basis, U>,
-) => GenericMeasure<N, Basis, U>;
+  left: GenericMeasure<N, Basis, U>,
+  right: GenericMeasure<N, Basis, U>,
+) => GenericMeasure<N, Basis, U>
 
 /** A function which transforms one or more measure with the same unit into a single measure with the same unit. */
 export type SpreadFn<N = number> = <Basis, U extends Unit<Basis>>(
-    first: GenericMeasure<N, Basis, U>,
-    ...rest: Array<GenericMeasure<N, Basis, U>>
-) => GenericMeasure<N, Basis, U>;
+  first: GenericMeasure<N, Basis, U>,
+  ...rest: Array<GenericMeasure<N, Basis, U>>
+) => GenericMeasure<N, Basis, U>
 
 /**
  * Converts a unary function of unitless numbers into a function of measures. This assumes that the underlying
@@ -31,7 +31,7 @@ export type SpreadFn<N = number> = <Basis, U extends Unit<Basis>>(
  * @returns a unary function of measures
  */
 export function wrapUnaryFn<N>(fn: (x: N) => N): UnaryFn<N> {
-    return x => x.unsafeMap(fn);
+  return x => x.unsafeMap(fn)
 }
 
 /**
@@ -42,7 +42,7 @@ export function wrapUnaryFn<N>(fn: (x: N) => N): UnaryFn<N> {
  * @returns a binary function of measures
  */
 export function wrapBinaryFn<N>(fn: (left: N, right: N) => N): BinaryFn<N> {
-    return (left, right) => left.unsafeMap(lValue => fn(lValue, right.value));
+  return (left, right) => left.unsafeMap(lValue => fn(lValue, right.value))
 }
 
 /**
@@ -54,11 +54,11 @@ export function wrapBinaryFn<N>(fn: (left: N, right: N) => N): BinaryFn<N> {
  * @returns a spread function of measures
  */
 export function wrapSpreadFn<N>(fn: (...x: N[]) => N): SpreadFn<N> {
-    return (first, ...rest) => {
-        const measureValues = [first, ...rest].map(m => m.value);
-        const newValue = fn(...measureValues);
-        return first.unsafeMap(() => newValue);
-    };
+  return (first, ...rest) => {
+    const measureValues = [first, ...rest].map(m => m.value)
+    const newValue = fn(...measureValues)
+    return first.unsafeMap(() => newValue)
+  }
 }
 
 /**
@@ -71,8 +71,8 @@ export function wrapSpreadFn<N>(fn: (...x: N[]) => N): SpreadFn<N> {
  * @returns a spread function of measures that reduces its arguments using the binary function passed
  */
 export function wrapReducerFn<N>(fn: (curr: N, prev: N, index: number) => N): SpreadFn<N> {
-    return (first, ...rest) => {
-        const values = rest.map(m => m.value);
-        return first.unsafeMap(() => values.reduce(fn, first.value));
-    };
+  return (first, ...rest) => {
+    const values = rest.map(m => m.value)
+    return first.unsafeMap(() => values.reduce(fn, first.value))
+  }
 }

@@ -64,7 +64,7 @@ export function represent<N, Basis, U extends Unit<Basis>>(
 
   if (positiveMeasures.length === 0 && negativeMeasures.length === 0 && isUnitExhausted(workingExponents)) {
     // It's a unitless measure, so strip the symbol?
-    return measure.withSymbol('')
+    return measure.withSymbol("")
   }
 
   const positive: SymbolAndExponent[] = []
@@ -122,7 +122,7 @@ export function represent<N, Basis, U extends Unit<Basis>>(
   positive.sort(orderDimensions)
   negative.sort(orderDimensions)
 
-  let sym = ''
+  let sym = ""
 
   if (positive.length === 0) {
     sym = formatDimensions(negative)
@@ -260,10 +260,10 @@ function orderDimensions([leftSymbol]: SymbolAndExponent, [rightSymbol]: SymbolA
 function formatDimensions(dimensions: SymbolAndExponent[]): string {
   return dimensions
     .map(([symbol, exponent]) => {
-      const exponentStr = exponent !== 1 ? superscriptNumber(exponent) : ''
+      const exponentStr = exponent !== 1 ? superscriptNumber(exponent) : ""
       return `${symbol}${exponentStr}`
     })
-    .join(' ⋅ ')
+    .join(" ⋅ ")
 }
 
 function maybeParenthesize(text: string, parenthesize: boolean): string {
@@ -271,26 +271,26 @@ function maybeParenthesize(text: string, parenthesize: boolean): string {
 }
 
 const DIGITS = {
-  '0': '⁰',
-  '1': '¹',
-  '2': '²',
-  '3': '³',
-  '4': '⁴',
-  '5': '⁵',
-  '6': '⁶',
-  '7': '⁷',
-  '8': '⁸',
-  '9': '⁹',
+  "0": "⁰",
+  "1": "¹",
+  "2": "²",
+  "3": "³",
+  "4": "⁴",
+  "5": "⁵",
+  "6": "⁶",
+  "7": "⁷",
+  "8": "⁸",
+  "9": "⁹",
 }
 
 export function superscriptNumber(s: number) {
   return String(s)
-    .split('')
+    .split("")
     .map((ch: string) => {
       if (ch in DIGITS) {
         return DIGITS[ch as keyof typeof DIGITS]
       }
       return ch
     })
-    .join('')
+    .join("")
 }
