@@ -1,5 +1,13 @@
 import { UnitSystem } from "./unitSystem"
-import { CubeUnit, DivideUnits, MultiplyUnits, ReciprocalUnit, SquareUnit, Unit } from "./unitTypeArithmetic"
+import {
+  CubeUnit,
+  DivideUnits,
+  MultiplyUnits,
+  ReciprocalUnit,
+  SquareUnit,
+  Unit,
+  UnitToPower,
+} from "./unitTypeArithmetic"
 
 export interface MeasureFormatter<N> {
   formatValue?: (value: N) => string
@@ -18,6 +26,8 @@ export interface NumericOperations<N> {
   sub(left: N, right: N): N
   /** Returns the product of two numbers of type N */
   mult(left: N, right: N): N
+  /** Returns a number of type N to the power of a regular number */
+  pow(left: N, power: number): N
   /** Returns the quotient of two numbers of type N */
   div(left: N, right: N): N
   /** Returns the reciprocal of the given number of type N */
@@ -69,6 +79,13 @@ export interface GenericMeasure<N, Basis, U extends Unit<Basis>> {
    * @returns A measure scaled by the value
    */
   scale(value: N): GenericMeasure<N, Basis, U>
+
+  /**
+   * Raises this measure to the power of a dimensionless value.
+   * @param power a scalar dimensionless power by which to raise this measure
+   * @returns A measure raised to this power
+   */
+  pow<Power extends number>(power: Power): GenericMeasure<N, Basis, UnitToPower<Basis, U, Power>>
 
   /**
    * Multiplies this measure with another measure.

@@ -1,7 +1,15 @@
 import { defaultFormatUnit } from "./format"
 import { GenericMeasure, MeasureFormatter, NumericOperations } from "./genericMeasure"
 import { UnitSystem } from "./unitSystem"
-import { DivideUnits, MultiplyUnits, ReciprocalUnit, SquareUnit, Unit, CubeUnit } from "./unitTypeArithmetic"
+import {
+  DivideUnits,
+  MultiplyUnits,
+  ReciprocalUnit,
+  SquareUnit,
+  Unit,
+  CubeUnit,
+  UnitToPower,
+} from "./unitTypeArithmetic"
 
 interface GenericMeasureClass<N> {
   createMeasure: <Basis, U extends Unit<Basis>>(
@@ -90,12 +98,16 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
       return this.over(other)
     }
 
+    public pow<Power extends number>(power: Power): GenericMeasure<N, Basis, UnitToPower<Basis, U, Power>> {
+      return new Measure(num.pow(this.value, power), this.unitSystem.pow(this.unit, power), this.unitSystem)
+    }
+
     public squared(): GenericMeasure<N, Basis, SquareUnit<Basis, U>> {
-      return this.times(this as GenericMeasure<N, Basis, U>)
+      return this.pow(2)
     }
 
     public cubed(): GenericMeasure<N, Basis, CubeUnit<Basis, U>> {
-      return this.squared().times(this as GenericMeasure<N, Basis, U>)
+      return this.pow(3)
     }
 
     public inverse(): GenericMeasure<N, Basis, ReciprocalUnit<Basis, U>> {

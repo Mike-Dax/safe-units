@@ -1,39 +1,9 @@
-export type Negative<N> = N extends number
-  ? 0 extends N
-    ? 0
-    : `${N}` extends `-${infer Pos extends number}`
-      ? Pos
-      : `-${N}` extends `${infer Neg extends number}`
-        ? Neg
-        : 0
-  : never
+import { Negate, Add, Subtract, Multiply } from "ts-arithmetic"
 
-export type AddIntegers<
-  Left extends number,
-  Right extends number,
-> = `${Left}` extends `-${infer LeftAbs extends number}`
-  ? `${Right}` extends `-${infer RightAbs extends number}`
-    ? Negative<AddPositiveIntegers<LeftAbs, RightAbs>>
-    : Negative<SubtractPositiveIntegers<LeftAbs, Right>>
-  : `${Right}` extends `-${infer RightAbs extends number}`
-    ? SubtractPositiveIntegers<Left, RightAbs>
-    : AddPositiveIntegers<Left, Right>
+export type Negative<N extends number> = Negate<N>
 
-type AddPositiveIntegers<Left extends number, Right extends number> = CoerceNumber<
-  [...TupleOfSize<Left>, ...TupleOfSize<Right>]["length"]
->
+export type AddIntegers<Left extends number, Right extends number> = Add<Left, Right>
 
-export type SubtractIntegers<Left extends number, Right extends number> = AddIntegers<Left, Negative<Right>>
+export type SubtractIntegers<Left extends number, Right extends number> = Subtract<Left, Right>
 
-type SubtractPositiveIntegers<Left extends number, Right extends number> =
-  TupleOfSize<Left> extends [...infer Diff, ...TupleOfSize<Right>]
-    ? Diff["length"]
-    : TupleOfSize<Right> extends [...infer Diff, ...TupleOfSize<Left>]
-      ? Negative<Diff["length"]>
-      : 0
-
-type CoerceNumber<N> = N extends number ? N : 0
-
-type TupleOfSize<N, BuiltTuple extends Array<1> = []> = BuiltTuple["length"] extends N
-  ? BuiltTuple
-  : TupleOfSize<N, [...BuiltTuple, 1]>
+export type MultiplyIntegers<Left extends number, Right extends number> = Multiply<Left, Right>

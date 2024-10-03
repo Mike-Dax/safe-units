@@ -5,6 +5,7 @@ import {
   MultiplyUnits,
   ReciprocalUnit,
   Unit,
+  UnitToPower,
 } from "./unitTypeArithmetic"
 
 type UnitSystemResult<Basis> = [Basis[keyof Basis]] extends [string]
@@ -87,6 +88,11 @@ export class UnitSystem<Basis> implements UnitSystem<Basis> {
     right: Right,
   ): MultiplyUnits<Basis, Left, Right> {
     return this.createUnit(dimension => left[dimension] + right[dimension]) as MultiplyUnits<Basis, Left, Right>
+  }
+
+  /** @returns a unit that is the product of the two input units */
+  public pow<U extends Unit<Basis>, Power extends number>(unit: U, power: Power): UnitToPower<Basis, U, Power> {
+    return this.createUnit(dimension => unit[dimension] * power) as UnitToPower<Basis, U, Power>
   }
 
   /** @returns a unit that is the quotient of the two input units */
