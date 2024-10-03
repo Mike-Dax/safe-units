@@ -64,7 +64,7 @@ export function represent<N, Basis, U extends Unit<Basis>>(
 
   if (positiveMeasures.length === 0 && negativeMeasures.length === 0 && isUnitExhausted(workingExponents)) {
     // It's a unitless measure, so strip the symbol?
-    return measure.withSymbol("")
+    return measure.withIdentifiers("", "", "")
   }
 
   const positive: SymbolAndExponent[] = []
@@ -136,7 +136,7 @@ export function represent<N, Basis, U extends Unit<Basis>>(
   const denominator = formatDimensions(negative)
   sym = `${numerator} / ${maybeParenthesize(denominator, negative.length !== 1)}`
 
-  return (newMeasure ?? measure).withSymbol(sym)
+  return (newMeasure ?? measure).withIdentifiers(sym)
 }
 
 function negatePartMutate<Basis>(whole: Record<keyof Basis, number>, part: Record<keyof Basis, number>, mul: number) {

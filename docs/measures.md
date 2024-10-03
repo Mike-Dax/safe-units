@@ -255,10 +255,10 @@ measuresComparisons.ts
 ### Symbols
 
 ```ts
-Measure<B, U>.withSymbol(symbol: string): Measure<B, U>;
+Measure<B, U>.withIdentifiers(symbol: string): Measure<B, U>;
 ```
 
-Duplicates the current measure and gives the new measure a symbol. Symbols are specific to an instance of a measure, performing operations on that measure will not forward along any symbols to the resulting measures. Calling `measure.withSymbol(symbol)` is equivalent to calling `Measure.of(1, measure, symbol)`. The symbol of a measure can be seen by accessing the readonly `symbol` field.
+Duplicates the current measure and gives the new measure a symbol. Symbols are specific to an instance of a measure, performing operations on that measure will not forward along any symbols to the resulting measures. Calling `measure.withIdentifiers(symbol)` is equivalent to calling `Measure.of(1, measure, symbol)`. The symbol of a measure can be seen by accessing the readonly `symbol` field.
 
 ```example
 measuresSymbols.ts

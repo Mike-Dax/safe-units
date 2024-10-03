@@ -3,7 +3,7 @@ import { Measure } from "../measure/numberMeasure"
 import { bits } from "./base"
 import { Memory } from "./quantities"
 
-export const bytes: Memory = Measure.of(8, bits, "B")
+export const bytes: Memory = Measure.of(8, bits, "byte", "bytes", "B")
 
 // HACKHACK: Explicitly type this so we can import PrefixFunction and avoid absolute paths in the generated typings.
 export const kibi: PrefixFn = Measure.prefix("Ki", 1 << 10)

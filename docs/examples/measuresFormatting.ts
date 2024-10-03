@@ -2,7 +2,7 @@ import { Measure, meters, newtons } from "safe-units";
 
 // START
 const kilometers = Measure.of(1000, meters, "km");
-// Could also be written as: Measure.of(1000, meters).withSymbol("km")
+// Could also be written as: Measure.of(1000, meters).withIdentifiers("km")
 
 const distance = Measure.of(5, kilometers);
 distance.toString(); // "5000 m"

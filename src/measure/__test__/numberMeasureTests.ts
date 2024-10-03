@@ -207,17 +207,17 @@ describe("Number measures", () => {
       expect(Measure.of(1000, meters, "km").symbol).toBe("km")
     })
 
-    it("should copy assign a symbol via .withSymbol()", () => {
+    it("should copy assign a symbol via .withIdentifiers()", () => {
       const original = Measure.of(1000, meters)
-      const result = original.withSymbol("km")
+      const result = original.withIdentifiers("km")
       expect(result).not.toBe(original)
       expect(original.symbol).toBeUndefined()
       expect(result.symbol).toBe("km")
     })
 
     it("should not pass along symbols through operations", () => {
-      const km = Measure.of(1000, meters.squared()).withSymbol("km2")
-      const dm = Measure.of(10, meters.squared()).withSymbol("dm2")
+      const km = Measure.of(1000, meters.squared()).withIdentifiers("km2")
+      const dm = Measure.of(10, meters.squared()).withIdentifiers("dm2")
       expect(km.negate().symbol).toBeUndefined()
       expect(km.squared().symbol).toBeUndefined()
       expect(km.inverse().symbol).toBeUndefined()
@@ -279,8 +279,8 @@ describe("Number measures", () => {
     })
 
     it("should not format using symbol even if present", () => {
-      expect(Measure.of(5, meters.squared()).withSymbol("m2").toString()).toBe("5 m^2")
-      expect(Measure.dimensionless(unitSystem, 0).withSymbol("rad").toString()).toBe("0")
+      expect(Measure.of(5, meters.squared()).withIdentifiers("m2").toString()).toBe("5 m^2")
+      expect(Measure.dimensionless(unitSystem, 0).withIdentifiers("rad").toString()).toBe("0")
     })
 
     it("should format measures as other measures with symbols", () => {

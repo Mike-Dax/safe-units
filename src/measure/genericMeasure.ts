@@ -36,6 +36,10 @@ export interface GenericMeasure<N, Basis, U extends Unit<Basis>> {
   readonly unit: U
   /** The unit system of this measure */
   readonly unitSystem: UnitSystem<Basis>
+  /** The name of the unit this measure represents, as a lower case singular (e.g. 1 foot) */
+  readonly nameSingular?: string | undefined
+  /** The name of the unit this measure represents, as a lower case plural (e.g. 2 feet) */
+  readonly namePlural?: string | undefined
   /** The symbol of the unit this measure represents (e.g. 0.3048 m = 1 ft) */
   readonly symbol?: string | undefined
 
@@ -197,7 +201,11 @@ export interface GenericMeasure<N, Basis, U extends Unit<Basis>> {
    * Adds a symbol to this measure.
    * @param symbol the symbol of the unit represented by this measure
    */
-  withSymbol(symbol: string | undefined): GenericMeasure<N, Basis, U>
+  withIdentifiers(
+    nameSingular: string | undefined,
+    namePlural: string | undefined,
+    symbol: string | undefined,
+  ): GenericMeasure<N, Basis, U>
 
   /** Shallow copies this measure instance. */
   clone(): GenericMeasure<N, Basis, U>

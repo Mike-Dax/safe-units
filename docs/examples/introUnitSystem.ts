@@ -17,7 +17,7 @@ type Time = typeof seconds;
 const FrameRate = Frames.over(Time);
 type FrameRate = typeof FrameRate;
 
-const fps: FrameRate = frames.per(seconds).withSymbol("fps");
+const fps: FrameRate = frames.per(seconds).withIdentifiers("fps");
 
 const minFrameRate = Measure.of(60, fps);
 

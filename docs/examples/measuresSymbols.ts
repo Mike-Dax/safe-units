@@ -1,7 +1,7 @@
 import { Measure, meters } from "safe-units";
 
 // START
-const squareMeters = meters.squared().withSymbol("sq. m");
+const squareMeters = meters.squared().withIdentifiers("sq. m");
 
 squareMeters.symbol; // "sq. m"
 

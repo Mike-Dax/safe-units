@@ -19,6 +19,8 @@ interface GenericMeasureFactory<N> {
   dimension<Basis, Dimension extends keyof Basis>(
     unitSystem: UnitSystem<Basis>,
     dimension: Dimension,
+    nameSingular?: string,
+    namePlural?: string,
     symbol?: string,
   ): GenericMeasure<N, Basis, DimensionUnit<Basis, Dimension>>
 
@@ -40,6 +42,8 @@ interface GenericMeasureFactory<N> {
   of<Basis, U extends Unit<Basis>>(
     value: N,
     quantity: GenericMeasure<N, Basis, U>,
+    nameSingular?: string,
+    namePlural?: string,
     symbol?: string,
   ): GenericMeasure<N, Basis, U>
 }
@@ -76,15 +80,17 @@ export function createMeasureType<N, S extends {} = {}>(
     ...getGenericMeasureStaticMethods(num),
     isMeasure,
     dimensionless: (unitSystem, value) => createMeasure(value, unitSystem.createDimensionlessUnit(), unitSystem),
-    dimension: (unitSystem, dimension, symbol) =>
+    dimension: (unitSystem, dimension, nameSingular, namePlural, symbol) =>
+      createMeasure(num.one(), unitSystem.createDimensionUnit(dimension), unitSystem, nameSingular, namePlural, symbol),
+    of: (value, quantity, nameSingular, namePlural, symbol) =>
       createMeasure(
-        num.one(),
-        unitSystem.createDimensionUnit(dimension),
-        unitSystem,
-        symbol ?? unitSystem.getSymbol(dimension),
+        num.mult(value, quantity.value),
+        quantity.unit,
+        quantity.unitSystem,
+        nameSingular,
+        namePlural,
+        symbol,
       ),
-    of: (value, quantity, symbol) =>
-      createMeasure(num.mult(value, quantity.value), quantity.unit, quantity.unitSystem, symbol),
   }
 
   return {

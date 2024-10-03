@@ -8,6 +8,8 @@ interface GenericMeasureClass<N> {
     value: N,
     unit: U,
     unitSystem: UnitSystem<Basis>,
+    nameSingular?: string,
+    namePlural?: string,
     symbol?: string,
   ) => GenericMeasure<N, Basis, U>
   isMeasure: (value: unknown) => value is GenericMeasure<N, any, any>
@@ -33,6 +35,8 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
       public readonly value: N,
       public readonly unit: U,
       public readonly unitSystem: UnitSystem<Basis>,
+      public readonly nameSingular?: string,
+      public readonly namePlural?: string,
       public readonly symbol?: string,
     ) {}
 
@@ -160,8 +164,12 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
       return num.div(this.value, unit.value)
     }
 
-    public withSymbol(symbol: string | undefined): GenericMeasure<N, Basis, U> {
-      return new Measure(this.value, this.unit, this.unitSystem, symbol)
+    public withIdentifiers(
+      nameSingular: string | undefined,
+      namePlural: string | undefined,
+      symbol: string | undefined,
+    ): GenericMeasure<N, Basis, U> {
+      return new Measure(this.value, this.unit, this.unitSystem, nameSingular, namePlural, symbol)
     }
 
     public clone(): GenericMeasure<N, Basis, U> {
@@ -170,7 +178,8 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
   }
 
   return {
-    createMeasure: (value, unit, unitSystem, symbol) => new Measure(value, unit, unitSystem, symbol),
+    createMeasure: (value, unit, unitSystem, nameSingular, namePlural, symbol) =>
+      new Measure(value, unit, unitSystem, nameSingular, namePlural, symbol),
     isMeasure: (value): value is GenericMeasure<N, any, any> => value instanceof Measure,
   }
 }

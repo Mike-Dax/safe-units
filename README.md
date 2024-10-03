@@ -105,7 +105,7 @@ Measure.of(1, miles).in(furlongs); // "8 fur"
 const fortnights = Measure.of(14, days, "ftn");
 const megafurlong = mega(furlongs);
 const microfortnight = micro(fortnights);
-const mfPerUFtn = megafurlong.per(microfortnight).withSymbol("Mfur/µftn");
+const mfPerUFtn = megafurlong.per(microfortnight).withIdentifiers("megafurlong per microfortnight", "megafurlongs per microfortnight", "Mfur/µftn");
 
 speedOfLight.in(mfPerUFtn); // "1.8026174997852542 Mfur/µftn"
 
@@ -150,7 +150,7 @@ type Time = typeof seconds;
 const FrameRate = Frames.over(Time);
 type FrameRate = typeof FrameRate;
 
-const fps: FrameRate = frames.per(seconds).withSymbol("fps");
+const fps: FrameRate = frames.per(seconds).withIdentifiers("frame per second", "frames per second", "fps");
 
 const minFrameRate = Measure.of(60, fps);
 

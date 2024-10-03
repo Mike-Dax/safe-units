@@ -601,14 +601,14 @@ function partialParse(
     const power = parseInt(powerMatch[1], 10)
 
     let measureToApplyTo = partial[key]?.measure?.measure ?? null
-    const measureWithSymbols = partial[key]?.measure ?? null
+    const measurewithIdentifierss = partial[key]?.measure ?? null
 
-    if (measureToApplyTo && measureWithSymbols) {
+    if (measureToApplyTo && measurewithIdentifierss) {
       const symbol = measureToApplyTo.symbol
       for (let index = 1; index < power; index++) {
         measureToApplyTo = measureToApplyTo.times(measureToApplyTo)
       }
-      measureToApplyTo = measureToApplyTo.withSymbol(`${symbol}${superscriptNumber(power)}`)
+      measureToApplyTo = measureToApplyTo.withIdentifiers(`${symbol}${superscriptNumber(power)}`)
 
       results.push(
         ...partialParse(
@@ -618,8 +618,8 @@ function partialParse(
               ...partial[key],
               measure: {
                 measure: measureToApplyTo,
-                name: `${measureWithSymbols.name}^${power}`,
-                symbol: `${measureWithSymbols.symbol}^${power}`,
+                name: `${measurewithIdentifierss.name}^${power}`,
+                symbol: `${measurewithIdentifierss.symbol}^${power}`,
               },
             },
             score: (partial.score ?? 1) * POWER_MATCH_SCORE,
@@ -854,7 +854,7 @@ function stringRepr(result: CompoundUnitPredictionWithDenominator, withScore = f
       for (let index = 1; index < result.unit.exponent; index++) {
         compound = compound.times(compound)
       }
-      compound = compound.withSymbol(`${symbol}${superscriptNumber(result.unit.exponent)}`)
+      compound = compound.withIdentifiers(`${symbol}${superscriptNumber(result.unit.exponent)}`)
     }
 
     if (result.over?.measure) {
@@ -869,10 +869,10 @@ function stringRepr(result: CompoundUnitPredictionWithDenominator, withScore = f
         for (let index = 1; index < result.over.exponent; index++) {
           over = over.times(over)
         }
-        over = over.withSymbol(`${symbol}${superscriptNumber(result.over.exponent)}`)
+        over = over.withIdentifiers(`${symbol}${superscriptNumber(result.over.exponent)}`)
       }
 
-      compound = compound.over(over).withSymbol(`${compound.symbol}/${over.symbol}`)
+      compound = compound.over(over).withIdentifiers(`${compound.symbol}/${over.symbol}`)
     }
 
     res = compound.symbol ?? "???"

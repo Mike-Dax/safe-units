@@ -51,7 +51,7 @@ export const getGenericMeasureStaticMethods = <N>(num: NumericOperations<N>): Ge
     prefix: (prefix, multiplier) => {
       return measure => {
         const { symbol } = measure
-        return measure.scale(multiplier).withSymbol(symbol && `${prefix}${symbol}`)
+        return measure.scale(multiplier).withIdentifiers(symbol && `${prefix}${symbol}`)
       }
     },
   }

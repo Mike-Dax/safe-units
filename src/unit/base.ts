@@ -22,16 +22,16 @@ export interface SIUnitSystem extends SIUnitSystemBasis {}
 export const SIUnitSystem = UnitSystem.from<SIUnitSystem>(SIUnitSystemBasis)
 
 export const createSIBaseUnits = <N>(measure: GenericMeasureType<N, any>) => ({
-  meters: measure.dimension(SIUnitSystem, "length"),
-  kilograms: measure.dimension(SIUnitSystem, "mass"),
-  seconds: measure.dimension(SIUnitSystem, "time"),
-  amperes: measure.dimension(SIUnitSystem, "current"),
-  kelvin: measure.dimension(SIUnitSystem, "temperature"),
-  moles: measure.dimension(SIUnitSystem, "substance"),
-  candelas: measure.dimension(SIUnitSystem, "intensity"),
-  radians: measure.dimension(SIUnitSystem, "planeAngle"),
-  steradians: measure.dimension(SIUnitSystem, "solidAngle"),
-  bits: measure.dimension(SIUnitSystem, "memory"),
+  meters: measure.dimension(SIUnitSystem, "length", "meter", "meters", "m"),
+  kilograms: measure.dimension(SIUnitSystem, "mass", "kilogram", "kilograms", "kg"),
+  seconds: measure.dimension(SIUnitSystem, "time", "second", "seconds", "s"),
+  amperes: measure.dimension(SIUnitSystem, "current", "ampere", "amperes", "A"),
+  kelvin: measure.dimension(SIUnitSystem, "temperature", "kelvin", "kelvin", "K"),
+  moles: measure.dimension(SIUnitSystem, "substance", "mole", "moles", "mol"),
+  candelas: measure.dimension(SIUnitSystem, "intensity", "candela", "candelas", "cd"),
+  radians: measure.dimension(SIUnitSystem, "planeAngle", "radian", "radians", "rad"),
+  steradians: measure.dimension(SIUnitSystem, "solidAngle", "steradian", "steradians", "sr"),
+  bits: measure.dimension(SIUnitSystem, "memory", "bit", "bits", "b"),
 })
 
 export const { meters, kilograms, seconds, amperes, kelvin, moles, candelas, radians, steradians, bits } =
