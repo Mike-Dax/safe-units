@@ -1,3 +1,3 @@
-import { emitDocs } from "./emit";
+import { emitDocs } from "./emit"
 
-emitDocs();
+emitDocs()
