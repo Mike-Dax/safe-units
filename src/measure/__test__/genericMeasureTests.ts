@@ -11,7 +11,7 @@ describe("Generic measures", () => {
   })
 
   describe("function wrappers", () => {
-    const meters = Measure.dimension(unitSystem, "length", "m")
+    const meters = Measure.dimension(unitSystem, "length", "meter", "meters", "m")
     const add = (left: number, right: number) => left + right
 
     it("unary wrapper", () => {
@@ -41,12 +41,16 @@ describe("Generic measures", () => {
 
   describe("static methods", () => {
     const numericOps: NumericOperations<number> = {
+      zero: () => 0,
       one: () => 1,
       neg: x => -x,
+      abs: x => Math.abs(x),
       add: (x, y) => x + y,
       sub: (x, y) => x - y,
       mult: (x, y) => x * y,
       div: (x, y) => x / y,
+      round: x => Math.round(x),
+      pow: (x, y) => Math.pow(x, y),
       reciprocal: x => 1 / x,
       compare: (x, y) => x - y,
       format: x => `${x}`,

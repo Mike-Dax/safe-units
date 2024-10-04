@@ -15,9 +15,11 @@ export type PrefixFn<PrefixToApply, N = number> = (<Basis, U extends Unit<Basis>
   /** The numeric value of this prefix, multiplies the value of the Measure */
   readonly value: N
   /** The name of the prefix this measure represents, as lower case (e.g. milli) */
-  readonly name: string
+  readonly prefixName: string
   /** The symbol of the prefix (e.g. m) */
   readonly symbol: string
+  /** The symbol of the prefix (e.g. m) */
+  readonly prefixMask: PrefixToApply
 }
 
 /** A function which transforms a single measure into another measure with the same unit. */

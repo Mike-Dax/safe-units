@@ -1,6 +1,7 @@
 import { GenericMeasure, NumericOperations } from "./genericMeasure"
 import { createMeasureType, GenericMeasureType } from "./genericMeasureFactory"
 import { SpreadFn, UnaryFn, wrapSpreadFn, wrapUnaryFn } from "./genericMeasureUtils"
+import { PrefixMask } from "./prefixMask"
 import { Unit } from "./unitTypeArithmetic"
 
 interface MeasureStaticMethods {
@@ -24,17 +25,25 @@ const staticMethods: MeasureStaticMethods = {
 }
 
 const numericOps: NumericOperations<number> = {
+  zero: () => 0,
   one: () => 1,
   neg: x => -x,
+  abs: x => Math.abs(x),
   add: (x, y) => x + y,
   sub: (x, y) => x - y,
   mult: (x, y) => x * y,
   div: (x, y) => x / y,
   pow: (x, y) => Math.pow(x, y),
   reciprocal: x => 1 / x,
+  round: x => Math.round(x),
   compare: (x, y) => x - y,
   format: x => `${x}`,
 }
 
-export type Measure<Basis, U extends Unit<Basis>> = GenericMeasure<number, Basis, U>
+export type Measure<Basis, U extends Unit<Basis>, AllowedPrefixes extends PrefixMask> = GenericMeasure<
+  number,
+  Basis,
+  U,
+  AllowedPrefixes
+>
 export const Measure: GenericMeasureType<number, MeasureStaticMethods> = createMeasureType(numericOps, staticMethods)

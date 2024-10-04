@@ -77,7 +77,7 @@ export const getGenericMeasureStaticMethods = <N>(num: NumericOperations<N>): Ge
 
       // TODO: Why do we need the as unknown cast above?
 
-      fn.name = name
+      fn.prefixName = name
       fn.symbol = symbol
       fn.value = multiplier
 

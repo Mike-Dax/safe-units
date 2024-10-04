@@ -1,5 +1,6 @@
 import { defaultFormatUnit } from "./format"
 import { GenericMeasure, MeasureFormatter, NumericOperations } from "./genericMeasure"
+import { PrefixFn } from "./genericMeasureUtils"
 import { IdentityMask, MarkMaskAsUsed, NO_PREFIX_ALLOWED, PrefixMask } from "./prefixMask"
 import { UnitSystem } from "./unitSystem"
 import {
@@ -17,13 +18,41 @@ interface GenericMeasureClass<N> {
     value: N,
     unit: U,
     unitSystem: UnitSystem<Basis>,
-    nameSingular?: string,
-    namePlural?: string,
-    symbol?: string,
+    nameSingular: string,
+    namePlural: string,
+    symbol: string,
     allowedPrefixes?: AllowedPrefixes,
   ) => GenericMeasure<N, Basis, U, AllowedPrefixes>
   isMeasure: (value: unknown) => value is GenericMeasure<N, any, any, any>
 }
+
+export type MeasureHistory<N, Basis, U extends Unit<Basis>> =
+  | {
+      type: "prefix"
+      measure: GenericMeasure<N, Basis, U, any>
+      multiplier: number
+      name: string
+      symbol: string
+    }
+  | {
+      type: "times"
+      left: GenericMeasure<N, Basis, U, any>
+      right: GenericMeasure<N, Basis, U, any>
+    }
+  | {
+      type: "over"
+      left: GenericMeasure<N, Basis, U, any>
+      right: GenericMeasure<N, Basis, U, any>
+    }
+  | {
+      type: "pow"
+      measure: GenericMeasure<N, Basis, U, any>
+      power: number
+    }
+  | {
+      type: "reciprocal" // unsure how to represent this with text?
+      measure: GenericMeasure<N, Basis, U, any>
+    }
 
 export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasureClass<N> {
   function getFormatter(formatter: MeasureFormatter<N> | undefined): Required<MeasureFormatter<N>> {
@@ -47,28 +76,60 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
       public readonly value: N,
       public readonly unit: U,
       public readonly unitSystem: UnitSystem<Basis>,
-      public readonly nameSingular?: string,
-      public readonly namePlural?: string,
-      public readonly symbol?: string,
-      public readonly allowedPrefixes?: PrefixMask,
+      public readonly nameSingular: string,
+      public readonly namePlural: string,
+      public readonly symbol: string,
+      public readonly allowedPrefixes: PrefixMask,
     ) {}
 
     // Arithmetic
 
     public plus(other: GenericMeasure<N, Basis, U, AllowedPrefixes>): GenericMeasure<N, Basis, U, AllowedPrefixes> {
-      return new Measure(num.add(this.value, other.value), this.unit, this.unitSystem)
+      return new Measure(
+        num.add(this.value, other.value),
+        this.unit,
+        this.unitSystem,
+        this.nameSingular,
+        this.namePlural,
+        this.symbol,
+        this.allowedPrefixes,
+      )
     }
 
     public minus(other: GenericMeasure<N, Basis, U, AllowedPrefixes>): GenericMeasure<N, Basis, U, AllowedPrefixes> {
-      return new Measure(num.sub(this.value, other.value), this.unit, this.unitSystem)
+      return new Measure(
+        num.sub(this.value, other.value),
+        this.unit,
+        this.unitSystem,
+        this.nameSingular,
+        this.namePlural,
+        this.symbol,
+        this.allowedPrefixes,
+      )
     }
 
     public negate(): GenericMeasure<N, Basis, U, AllowedPrefixes> {
-      return new Measure(num.neg(this.value), this.unit, this.unitSystem)
+      return new Measure(
+        num.neg(this.value),
+        this.unit,
+        this.unitSystem,
+        this.nameSingular,
+        this.namePlural,
+        this.symbol,
+        this.allowedPrefixes,
+      )
     }
 
     public scale(value: N): GenericMeasure<N, Basis, U, AllowedPrefixes> {
-      return new Measure(num.mult(this.value, value), this.unit, this.unitSystem)
+      return new Measure(
+        num.mult(this.value, value),
+        this.unit,
+        this.unitSystem,
+        this.nameSingular,
+        this.namePlural,
+        this.symbol,
+        this.allowedPrefixes,
+      )
     }
 
     public applyPrefix<PrefixToApply extends Partial<AllowedPrefixes>>(
@@ -79,18 +140,15 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
     ): GenericMeasure<N, Basis, U, IdentityMask<MarkMaskAsUsed<AllowedPrefixes>>> {
       // TODO: Check the prefix mask matches this Measure's allowed mask, otherwise throw. (An incorrect mask should have been prevented via the type system)
 
-      // TODO: Apply the multiplier to the value
       // TODO: Keep the prefix information in history
-
-      // TODO: Return a Measure with a mask that disallows further prefixing.
 
       return new Measure(
         num.mult(this.value, multiplier),
         this.unit,
         this.unitSystem,
-        this.nameSingular,
-        this.namePlural,
-        this.symbol,
+        `${name}${this.nameSingular}`,
+        `${name}${this.namePlural}`,
+        `${symbol}${this.symbol}`,
         NO_PREFIX_ALLOWED,
       ) as GenericMeasure<N, Basis, U, IdentityMask<MarkMaskAsUsed<AllowedPrefixes>>>
     }
@@ -102,6 +160,10 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
         num.mult(this.value, other.value),
         this.unitSystem.multiply(this.unit, other.unit),
         this.unitSystem,
+        this.nameSingular,
+        this.namePlural,
+        this.symbol,
+        this.allowedPrefixes,
       )
     }
 
@@ -112,6 +174,36 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
         num.div(this.value, other.value),
         this.unitSystem.divide(this.unit, other.unit),
         this.unitSystem,
+        this.nameSingular,
+        this.namePlural,
+        this.symbol,
+        this.allowedPrefixes,
+      )
+    }
+
+    public pow<Power extends number>(
+      power: Power,
+    ): GenericMeasure<N, Basis, UnitToPower<Basis, U, Power>, AllowedPrefixes> {
+      return new Measure(
+        num.pow(this.value, power),
+        this.unitSystem.pow(this.unit, power),
+        this.unitSystem,
+        this.nameSingular,
+        this.namePlural,
+        this.symbol,
+        this.allowedPrefixes,
+      )
+    }
+
+    public reciprocal(): GenericMeasure<N, Basis, ReciprocalUnit<Basis, U>, AllowedPrefixes> {
+      return new Measure(
+        num.reciprocal(this.value),
+        this.unitSystem.reciprocal(this.unit),
+        this.unitSystem,
+        this.nameSingular,
+        this.namePlural,
+        this.symbol,
+        this.allowedPrefixes,
       )
     }
 
@@ -127,12 +219,6 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
       return this.over(other)
     }
 
-    public pow<Power extends number>(
-      power: Power,
-    ): GenericMeasure<N, Basis, UnitToPower<Basis, U, Power>, AllowedPrefixes> {
-      return new Measure(num.pow(this.value, power), this.unitSystem.pow(this.unit, power), this.unitSystem)
-    }
-
     public squared(): GenericMeasure<N, Basis, SquareUnit<Basis, U>, AllowedPrefixes> {
       return this.pow(2)
     }
@@ -144,17 +230,20 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
     public inverse(): GenericMeasure<N, Basis, ReciprocalUnit<Basis, U>, AllowedPrefixes> {
       return this.reciprocal()
     }
-
-    public reciprocal(): GenericMeasure<N, Basis, ReciprocalUnit<Basis, U>, AllowedPrefixes> {
-      return new Measure(num.reciprocal(this.value), this.unitSystem.reciprocal(this.unit), this.unitSystem)
-    }
-
     public unsafeMap<V extends Unit<Basis>>(
       valueMap: (value: N) => N,
       unitMap?: (unit: U) => V,
     ): GenericMeasure<N, Basis, V, AllowedPrefixes> {
       const newUnit = unitMap?.(this.unit) ?? this.unit
-      return new Measure<Basis, V, AllowedPrefixes>(valueMap(this.value), newUnit as V, this.unitSystem)
+      return new Measure<Basis, V, AllowedPrefixes>(
+        valueMap(this.value),
+        newUnit as V,
+        this.unitSystem,
+        this.nameSingular,
+        this.namePlural,
+        this.symbol,
+        this.allowedPrefixes,
+      )
     }
 
     // Comparisons
@@ -187,8 +276,28 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
       return this.compare(other) > 0
     }
 
-    // Formatting
+    public withIdentifiers<NewAllowedPrefixes extends PrefixMask>(
+      nameSingular: string,
+      namePlural: string,
+      symbol: string,
+      allowedPrefixes: NewAllowedPrefixes = {} as NewAllowedPrefixes,
+    ): GenericMeasure<N, Basis, U, NewAllowedPrefixes> {
+      return new Measure(this.value, this.unit, this.unitSystem, nameSingular, namePlural, symbol, allowedPrefixes)
+    }
 
+    public clone(): GenericMeasure<N, Basis, U, AllowedPrefixes> {
+      return new Measure(
+        this.value,
+        this.unit,
+        this.unitSystem,
+        this.nameSingular,
+        this.namePlural,
+        this.symbol,
+        this.allowedPrefixes,
+      )
+    }
+
+    // Formatting
     public toString(formatter?: MeasureFormatter<N>): string {
       const { formatValue, formatUnit } = getFormatter(formatter)
       return `${formatValue(this.value)} ${formatUnit(this.unit, this.unitSystem)}`.trimRight()
@@ -207,22 +316,100 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
       return num.div(this.value, unit.value)
     }
 
-    public withIdentifiers(
-      nameSingular: string | undefined,
-      namePlural: string | undefined,
-      symbol: string | undefined,
-    ): GenericMeasure<N, Basis, U, AllowedPrefixes> {
-      return new Measure(this.value, this.unit, this.unitSystem, nameSingular, namePlural, symbol)
+    public createConverterTo(unit: GenericMeasure<N, Basis, U, AllowedPrefixes>) {
+      // This should all get inlined
+      const factor = num.div(this.value, unit.value)
+      const multFn = num.mult
+
+      return (value: N): N => {
+        return multFn(factor, value)
+      }
     }
 
-    public clone(): GenericMeasure<N, Basis, U, AllowedPrefixes> {
-      return new Measure(this.value, this.unit, this.unitSystem)
+    public createToNearestConverter(value: N, unit: GenericMeasure<N, Basis, U, AllowedPrefixes>) {
+      // This should all get inlined
+      const factor = num.div(this.value, unit.value)
+      const multFn = num.mult
+      const roundFn = num.round
+      const divideFn = num.div
+      const nearest = value
+
+      // console.log(
+      //   `converting ${value} from ${this.namePlural} to the nearest ${nearest} ${unit.namePlural}. Unrounded ${unrounded} ${unit.symbol}, rounded: ${rounded} ${unit.symbol}`,
+      // )
+
+      return (value: N): N => {
+        const unrounded = multFn(factor, value)
+        const rounded = multFn(roundFn(divideFn(unrounded, nearest)), nearest)
+        return rounded
+      }
+    }
+
+    public createNameFormatter() {
+      // This should all get inlined
+      const single = num.one()
+      const match = num.compare
+
+      return (value: N): string => {
+        if (match(value, single) === 0) {
+          return this.nameSingular
+        } else {
+          return this.namePlural
+        }
+      }
+    }
+
+    public createDynamicFormatter(
+      measures: GenericMeasure<N, Basis, U, AllowedPrefixes>[],
+      toNearest?: N,
+    ): (value: N) => {
+      value: N
+      symbol: string
+      converter: (value: N) => N
+    } {
+      // Sort measures by value from largest to smallest
+      const sortedMeasures = [...measures].sort((a, b) => num.compare(b.value, a.value))
+
+      // Create converters for each measure
+      const converters = sortedMeasures.map(measure =>
+        toNearest && num.compare(toNearest, num.zero()) !== 0
+          ? this.createToNearestConverter(toNearest, measure)
+          : this.createConverterTo(measure),
+      )
+
+      const one = num.one()
+
+      return (value: N) => {
+        for (let i = 0; i < sortedMeasures.length; i++) {
+          const convertedValue = converters[i](value)
+
+          if (num.compare(convertedValue, one) >= 0) {
+            return {
+              value: convertedValue,
+              symbol: sortedMeasures[i].getSymbol(),
+              converter: converters[i],
+            }
+          }
+        }
+
+        // If no suitable measure is found, return the last (smallest) measure
+        const lastIndex = sortedMeasures.length - 1
+        return {
+          value: converters[lastIndex](value),
+          symbol: sortedMeasures[lastIndex].getSymbol(),
+          converter: converters[lastIndex],
+        }
+      }
+    }
+
+    public getSymbol() {
+      return this.symbol
     }
   }
 
   return {
     createMeasure: (value, unit, unitSystem, nameSingular, namePlural, symbol, allowedPrefixes) =>
-      new Measure(value, unit, unitSystem, nameSingular, namePlural, symbol, allowedPrefixes),
+      new Measure(value, unit, unitSystem, nameSingular, namePlural, symbol, allowedPrefixes ?? {}),
     isMeasure: (value): value is GenericMeasure<N, any, any, any> => value instanceof Measure,
   }
 }

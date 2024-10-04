@@ -1,3 +1,4 @@
+import { PrefixFn } from "./genericMeasureUtils"
 import { IdentityMask, MarkMaskAsUsed, PrefixMask } from "./prefixMask"
 import { UnitSystem } from "./unitSystem"
 import {
@@ -19,8 +20,12 @@ export interface MeasureFormatter<N> {
 export interface NumericOperations<N> {
   /** Returns the multiplicative identity for numbers of type N */
   one(): N
+  /** Returns the zero value for numbers of type N */
+  zero(): N
   /** Returns the negative of a number of type N */
   neg(value: N): N
+  /** Returns the abs of a number of type N */
+  abs(value: N): N
   /** Returns the sum of two numbers of type N */
   add(left: N, right: N): N
   /** Returns the difference of two numbers of type N */
@@ -33,6 +38,8 @@ export interface NumericOperations<N> {
   div(left: N, right: N): N
   /** Returns the reciprocal of the given number of type N */
   reciprocal(value: N): N
+  /** Rounds a number of type N */
+  round(value: N): N
   /** Compares two numbers returning a negative, zero, or positive value. */
   compare(left: N, right: N): number
   /** Formats a number for display */
@@ -48,11 +55,11 @@ export interface GenericMeasure<N, Basis, U extends Unit<Basis>, AllowedPrefixes
   /** The unit system of this measure */
   readonly unitSystem: UnitSystem<Basis>
   /** The name of the unit this measure represents, as a lower case singular (e.g. 1 foot) */
-  readonly nameSingular?: string | undefined
+  readonly nameSingular: string
   /** The name of the unit this measure represents, as a lower case plural (e.g. 2 feet) */
-  readonly namePlural?: string | undefined
+  readonly namePlural: string
   /** The symbol of the unit this measure represents (e.g. 0.3048 m = 1 ft) */
-  readonly symbol?: string | undefined
+  readonly symbol: string
 
   /**
    * Adds this measure to another measure with the same unit.
@@ -250,6 +257,33 @@ export interface GenericMeasure<N, Basis, U extends Unit<Basis>, AllowedPrefixes
 
   /** Shallow copies this measure instance. */
   clone(): GenericMeasure<N, Basis, U, AllowedPrefixes>
+
+  /** Creates a converter function that converts a value of this Measure to a value in another measure. */
+  createConverterTo(unit: GenericMeasure<N, Basis, U, AllowedPrefixes>): (value: N) => N
+
+  /** Creates a converter function that converts a value of this Measure to a value in another measure, to the nearest of that other measure. The 'toNearest' argument must be non-zero. */
+  createToNearestConverter(toNearest: N, unit: GenericMeasure<N, Basis, U, AllowedPrefixes>): (value: N) => N
+
+  /** Creates a function that takes a value of this Measure and returns the plural or singular name as a string. */
+  createNameFormatter(): (value: N) => string
+
+  /**
+   * Given an array of Measures, creates a function that takes a value of this Measure
+   * and finds the smallest value above `toNearest` (which is 1 by default). It returns this value, the symbol, and the converter function.
+   *
+   *
+   */
+  createDynamicFormatter(
+    measures: GenericMeasure<N, Basis, U, AllowedPrefixes>[],
+    toNearest?: N,
+  ): (value: N) => {
+    value: N
+    symbol: string
+    converter: (value: N) => N
+  }
+
+  /** Return the symbol of this Measure. */
+  getSymbol(): string
 }
 
 /**

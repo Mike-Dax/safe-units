@@ -20,9 +20,9 @@ interface GenericMeasureFactory<N> {
   dimension<Basis, Dimension extends keyof Basis, AllowedPrefixes extends PrefixMask>(
     unitSystem: UnitSystem<Basis>,
     dimension: Dimension,
-    nameSingular?: string,
-    namePlural?: string,
-    symbol?: string,
+    nameSingular: string,
+    namePlural: string,
+    symbol: string,
     allowedPrefixes?: AllowedPrefixes,
   ): GenericMeasure<N, Basis, DimensionUnit<Basis, Dimension>, AllowedPrefixes>
 
@@ -53,9 +53,9 @@ interface GenericMeasureFactory<N> {
   >(
     value: N,
     quantity: GenericMeasure<N, Basis, U, AllowedPrefixes>,
-    nameSingular?: string,
-    namePlural?: string,
-    symbol?: string,
+    nameSingular: string,
+    namePlural: string,
+    symbol: string,
     allowedPrefixes?: OverridingAllowedPrefixes,
   ): GenericMeasure<N, Basis, U, OverridingAllowedPrefixes>
 }
@@ -91,10 +91,11 @@ export function createMeasureType<N, S extends {} = {}>(
   const common: GenericMeasureCommon<N> = {
     ...getGenericMeasureStaticMethods(num),
     isMeasure,
-    dimensionless: (unitSystem, value) => createMeasure(value, unitSystem.createDimensionlessUnit(), unitSystem),
+    dimensionless: (unitSystem, value) =>
+      createMeasure(value, unitSystem.createDimensionlessUnit(), unitSystem, "", "", ""),
     dimension: (unitSystem, dimension, nameSingular, namePlural, symbol) =>
       createMeasure(num.one(), unitSystem.createDimensionUnit(dimension), unitSystem, nameSingular, namePlural, symbol),
-    of: (value, quantity, nameSingular, namePlural, symbol) =>
+    of: (value, quantity, nameSingular, namePlural, symbol, allowedPrefixes) =>
       createMeasure(
         num.mult(value, quantity.value),
         quantity.unit,
@@ -102,6 +103,7 @@ export function createMeasureType<N, S extends {} = {}>(
         nameSingular,
         namePlural,
         symbol,
+        allowedPrefixes,
       ),
   }
 
