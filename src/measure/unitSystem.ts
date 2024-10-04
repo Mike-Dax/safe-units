@@ -90,7 +90,7 @@ export class UnitSystem<Basis> implements UnitSystem<Basis> {
     return this.createUnit(dimension => left[dimension] + right[dimension]) as MultiplyUnits<Basis, Left, Right>
   }
 
-  /** @returns a unit that is the product of the two input units */
+  /** @returns a unit to the power of a dimensionless constant */
   public pow<U extends Unit<Basis>, Power extends number>(unit: U, power: Power): UnitToPower<Basis, U, Power> {
     return this.createUnit(dimension => unit[dimension] * power) as UnitToPower<Basis, U, Power>
   }
@@ -127,3 +127,84 @@ export class UnitSystem<Basis> implements UnitSystem<Basis> {
     return partial as Unit<Basis>
   }
 }
+
+/*
+type PrefixMask = {
+  [key: string]: boolean
+}
+
+type PrefixableValue<AllowedPrefixes> = {
+  value: number
+  allowedPrefixes: AllowedPrefixes
+}
+
+type PrefixApplier<M> = {
+  multiplier: number
+  prefixMask: M
+}
+
+type MarkMaskAsUsed<M extends PrefixMask> = {
+  [key in keyof M]: false
+}
+
+type IdentityMask<M extends PrefixMask> = Readonly<{
+  [K in keyof M]: M[K]
+}>
+
+function applyPrefix<AllowedPrefixes extends PrefixMask, PrefixToApply extends Partial<AllowedPrefixes>>(
+  prefixableValue: PrefixableValue<AllowedPrefixes>,
+  prefixApplier: PrefixApplier<PrefixToApply>,
+): PrefixableValue<IdentityMask<MarkMaskAsUsed<AllowedPrefixes>>> {
+  const copyOfMask = Object.assign({}, prefixableValue.allowedPrefixes) as MarkMaskAsUsed<AllowedPrefixes>
+  for (const key of Object.keys(copyOfMask)) {
+    copyOfMask[key as keyof AllowedPrefixes] = false
+  }
+
+  return {
+    value: prefixableValue.value * prefixApplier.multiplier,
+    allowedPrefixes: copyOfMask,
+  }
+}
+
+type ValidateAllowedPrefixes<AllowedPrefixes, PrefixToApply> = AllowedPrefixes extends PrefixMask
+  ? PrefixToApply extends Partial<AllowedPrefixes>
+    ? AllowedPrefixes
+    : never
+  : never
+
+function createPrefixWrapper<PrefixToApply>(applier: PrefixApplier<PrefixToApply>) {
+  return <AllowedPrefixes extends PrefixMask>(
+    prefixableValue: PrefixableValue<ValidateAllowedPrefixes<AllowedPrefixes, PrefixToApply>>,
+  ) => applyPrefix(prefixableValue, applier as any)
+}
+
+const val = {
+  value: 30,
+  allowedPrefixes: {
+    SI_MULTIPLES: true,
+  },
+} as const
+
+const prefixMult = {
+  multiplier: 2,
+  prefixMask: {
+    SI_MULTIPLES: true,
+  },
+} as const
+
+const prefixSubMult = {
+  multiplier: 2,
+  prefixMask: {
+    SI_SUBMULTIPLES: true,
+  },
+} as const
+
+const mult = createPrefixWrapper(prefixMult)
+
+const resultD = mult(val)
+const resultE = mult(resultD)
+
+const resultA = applyPrefix(val, prefixMult)
+const resultB = applyPrefix(resultA, prefixMult)
+const resultC = applyPrefix(resultA, prefixSubMult)
+*/

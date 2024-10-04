@@ -18,7 +18,7 @@ import {
 // Dimensionless
 
 /** A measure without any unit */
-export type Dimensionless<N = number> = GenericMeasure<N, SIUnitSystem, DimensionlessUnit<SIUnitSystem>>
+export type Dimensionless<N = number> = GenericMeasure<N, SIUnitSystem, DimensionlessUnit<SIUnitSystem>, {}>
 export const Dimensionless: Dimensionless = Measure.dimensionless(SIUnitSystem, 1)
 
 // Base units

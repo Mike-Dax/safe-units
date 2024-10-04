@@ -1,13 +1,14 @@
 import { GenericMeasure, NumericOperations } from "./genericMeasure"
 import { createMeasureClass } from "./genericMeasureClass"
 import { GenericMeasureStatic, getGenericMeasureStaticMethods } from "./genericMeasureStatic"
+import { PrefixMask } from "./prefixMask"
 import { UnitSystem } from "./unitSystem"
 import { DimensionUnit, DimensionlessUnit, Unit } from "./unitTypeArithmetic"
 
 /** The functions needed to construct a measure of a given numeric type */
 interface GenericMeasureFactory<N> {
   /** The constructor for this generic measure type, useful for doing `instanceof` checks. */
-  isMeasure(value: any): value is GenericMeasure<N, any, any>
+  isMeasure(value: any): value is GenericMeasure<N, any, any, any>
 
   /**
    * Creates a new dimension base unit.
@@ -16,13 +17,14 @@ interface GenericMeasureFactory<N> {
    * @param symbol the symbol of the base unit of the dimension (e.g. "m")
    * @returns A measure representing 1 base unit of the dimension (1 m)
    */
-  dimension<Basis, Dimension extends keyof Basis>(
+  dimension<Basis, Dimension extends keyof Basis, AllowedPrefixes extends PrefixMask>(
     unitSystem: UnitSystem<Basis>,
     dimension: Dimension,
     nameSingular?: string,
     namePlural?: string,
     symbol?: string,
-  ): GenericMeasure<N, Basis, DimensionUnit<Basis, Dimension>>
+    allowedPrefixes?: AllowedPrefixes,
+  ): GenericMeasure<N, Basis, DimensionUnit<Basis, Dimension>, AllowedPrefixes>
 
   /**
    * Creates a dimensionless measure.
@@ -30,7 +32,11 @@ interface GenericMeasureFactory<N> {
    * @param value the value of the measure
    * @returns a measure with no dimensions
    */
-  dimensionless<Basis>(unitSystem: UnitSystem<Basis>, value: N): GenericMeasure<N, Basis, DimensionlessUnit<Basis>>
+  dimensionless<Basis, AllowedPrefixes extends PrefixMask>(
+    unitSystem: UnitSystem<Basis>,
+    value: N,
+    allowedPrefixes?: AllowedPrefixes,
+  ): GenericMeasure<N, Basis, DimensionlessUnit<Basis>, AllowedPrefixes>
 
   /**
    * Creates a measure as a multiple of another measure.
@@ -39,13 +45,19 @@ interface GenericMeasureFactory<N> {
    * @param symbol an optional unit symbol for this measure
    * @returns a measure of value number of quantities.
    */
-  of<Basis, U extends Unit<Basis>>(
+  of<
+    Basis,
+    U extends Unit<Basis>,
+    AllowedPrefixes extends PrefixMask,
+    OverridingAllowedPrefixes extends PrefixMask = AllowedPrefixes,
+  >(
     value: N,
-    quantity: GenericMeasure<N, Basis, U>,
+    quantity: GenericMeasure<N, Basis, U, AllowedPrefixes>,
     nameSingular?: string,
     namePlural?: string,
     symbol?: string,
-  ): GenericMeasure<N, Basis, U>
+    allowedPrefixes?: OverridingAllowedPrefixes,
+  ): GenericMeasure<N, Basis, U, OverridingAllowedPrefixes>
 }
 
 type GenericMeasureCommon<N> = GenericMeasureFactory<N> & GenericMeasureStatic<N>

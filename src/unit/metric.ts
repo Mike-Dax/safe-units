@@ -25,24 +25,42 @@ export const katals: Quantity.CatalyticActivity = moles.per(seconds).withIdentif
 export const lumens: Quantity.LuminousFlux = candelas.times(steradians).withIdentifiers("lumen", "lumens", "lm")
 export const luxes: Quantity.Illuminance = lumens.per(meters.squared()).withIdentifiers("lux", "luxes", "lx")
 
+// Prefixes
+
+export const ALLOW_SI_SUBMULTIPLE_PREFIX = {
+  PREFIX_SI_SUBMULTIPLE: true,
+} as const
+export const ALLOW_SI_MULTIPLE_PREFIX = {
+  PREFIX_SI_MULTIPLE: true,
+} as const
+export const ALLOW_SI_PREFIX = {
+  PREFIX_SI_SUBMULTIPLE: true,
+  PREFIX_SI_MULTIPLE: true,
+} as const
+export type SIPrefix = typeof ALLOW_SI_PREFIX
+export type SIPrefixMultiple = typeof ALLOW_SI_MULTIPLE_PREFIX
+export type SIPrefixSubMultiple = typeof ALLOW_SI_SUBMULTIPLE_PREFIX
+
 // HACKHACK: Explicitly type this so we can import PrefixFunction and avoid absolute paths in the generated typings.
-export const yotta: PrefixFn = Measure.prefix("Y", 1e24)
-export const zetta = Measure.prefix("Z", 1e21)
-export const exa = Measure.prefix("E", 1e18)
-export const peta = Measure.prefix("P", 1e15)
-export const tera = Measure.prefix("T", 1e12)
-export const giga = Measure.prefix("G", 1e9)
-export const mega = Measure.prefix("M", 1e6)
-export const kilo = Measure.prefix("k", 1e3)
-export const hecto = Measure.prefix("h", 100)
-export const deca = Measure.prefix("da", 10)
-export const deci = Measure.prefix("d", 0.1)
-export const centi = Measure.prefix("c", 0.01)
-export const milli = Measure.prefix("m", 1e-3)
-export const micro = Measure.prefix("µ", 1e-6)
-export const nano = Measure.prefix("n", 1e-9)
-export const pico = Measure.prefix("p", 1e-12)
-export const femto = Measure.prefix("f", 1e-15)
-export const atto = Measure.prefix("y", 1e-18)
-export const zepto = Measure.prefix("z", 1e-21)
-export const yocto = Measure.prefix("y", 1e-24)
+export const yotta: PrefixFn<SIPrefixMultiple> = Measure.prefix("yotta", "Y", 1e24, ALLOW_SI_MULTIPLE_PREFIX)
+export const zetta = Measure.prefix("zetta", "Z", 1e21, ALLOW_SI_MULTIPLE_PREFIX)
+export const exa = Measure.prefix("exa", "E", 1e18, ALLOW_SI_MULTIPLE_PREFIX)
+export const peta = Measure.prefix("peta", "P", 1e15, ALLOW_SI_MULTIPLE_PREFIX)
+export const tera = Measure.prefix("tera", "T", 1e12, ALLOW_SI_MULTIPLE_PREFIX)
+export const giga = Measure.prefix("giga", "G", 1e9, ALLOW_SI_MULTIPLE_PREFIX)
+export const mega = Measure.prefix("mega", "M", 1e6, ALLOW_SI_MULTIPLE_PREFIX)
+export const kilo = Measure.prefix("kilo", "k", 1e3, ALLOW_SI_MULTIPLE_PREFIX)
+export const hecto = Measure.prefix("hecto", "h", 100, ALLOW_SI_MULTIPLE_PREFIX)
+export const deca = Measure.prefix("deca", "da", 10, ALLOW_SI_MULTIPLE_PREFIX)
+
+// Submultiples
+export const deci = Measure.prefix("deci", "d", 0.1, ALLOW_SI_SUBMULTIPLE_PREFIX)
+export const centi = Measure.prefix("centi", "c", 0.01, ALLOW_SI_SUBMULTIPLE_PREFIX)
+export const milli = Measure.prefix("milli", "m", 1e-3, ALLOW_SI_SUBMULTIPLE_PREFIX)
+export const micro = Measure.prefix("micro", "µ", 1e-6, ALLOW_SI_SUBMULTIPLE_PREFIX)
+export const nano = Measure.prefix("nano", "n", 1e-9, ALLOW_SI_SUBMULTIPLE_PREFIX)
+export const pico = Measure.prefix("pico", "p", 1e-12, ALLOW_SI_SUBMULTIPLE_PREFIX)
+export const femto = Measure.prefix("femto", "f", 1e-15, ALLOW_SI_SUBMULTIPLE_PREFIX)
+export const atto = Measure.prefix("atto", "a", 1e-18, ALLOW_SI_SUBMULTIPLE_PREFIX)
+export const zepto = Measure.prefix("zepto", "z", 1e-21, ALLOW_SI_SUBMULTIPLE_PREFIX)
+export const yocto = Measure.prefix("yocto", "y", 1e-24, ALLOW_SI_SUBMULTIPLE_PREFIX)
