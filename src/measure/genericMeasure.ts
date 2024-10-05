@@ -40,6 +40,8 @@ export interface NumericOperations<N> {
   reciprocal(value: N): N
   /** Rounds a number of type N */
   round(value: N): N
+  /** Floors a number of type N */
+  floor(value: N): N
   /** Compares two numbers returning a negative, zero, or positive value. */
   compare(left: N, right: N): number
   /** Formats a number for display */
@@ -250,9 +252,9 @@ export interface GenericMeasure<N, Basis, U extends Unit<Basis>, AllowedPrefixes
    * @param symbol the symbol of the unit represented by this measure
    */
   withIdentifiers(
-    nameSingular: string | undefined,
-    namePlural: string | undefined,
-    symbol: string | undefined,
+    nameSingular: string,
+    namePlural: string,
+    symbol: string,
   ): GenericMeasure<N, Basis, U, AllowedPrefixes>
 
   /** Shallow copies this measure instance. */
@@ -269,18 +271,44 @@ export interface GenericMeasure<N, Basis, U extends Unit<Basis>, AllowedPrefixes
 
   /**
    * Given an array of Measures, creates a function that takes a value of this Measure
-   * and finds the smallest value above `toNearest` (which is 1 by default). It returns this value, the symbol, and the converter function.
+   * and finds the smallest value above `toNearest` (which is 1 by default).
    *
-   *
+   * It returns this value, the symbol, and the converter function.
    */
   createDynamicFormatter(
     measures: GenericMeasure<N, Basis, U, AllowedPrefixes>[],
     toNearest?: N,
+    text?: "symbol" | "name",
   ): (value: N) => {
     value: N
-    symbol: string
+    text: string
     converter: (value: N) => N
   }
+
+  /**
+   * Given an array of Measures, creates a function that takes a value of this Measure
+   * and returns an array of text and value properties representing the units used to format
+   * the passed value.
+   *
+   * It uses each Measure in order, skipping it if it produces less than 1 of a Measure.
+   *
+   * Optionally the final Measure can be rounded to the nearest `toNearest` number.
+   *
+   * Optionally Measure's with a zero value can be skipped in the final output.
+   *
+   * eg 190.5cm = 6 feet, 3 inches
+   *
+   * eg 3664 seconds = 1 hour, 1 minute, 4 seconds
+   */
+  createMultiUnitFormatter(
+    measures: GenericMeasure<N, Basis, U, AllowedPrefixes>[],
+    toNearest?: N,
+    text?: "symbol" | "name",
+    keepZeros?: boolean,
+  ): (value: N) => {
+    value: N
+    text: string
+  }[]
 
   /** Return the symbol of this Measure. */
   getSymbol(): string

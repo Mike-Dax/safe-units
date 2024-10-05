@@ -362,22 +362,28 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
     public createDynamicFormatter(
       measures: GenericMeasure<N, Basis, U, AllowedPrefixes>[],
       toNearest?: N,
+      text: "symbol" | "name" = "symbol",
     ): (value: N) => {
       value: N
-      symbol: string
+      text: string
       converter: (value: N) => N
     } {
       // Sort measures by value from largest to smallest
       const sortedMeasures = [...measures].sort((a, b) => num.compare(b.value, a.value))
 
+      const shouldUseToNearest = Boolean(toNearest && num.compare(toNearest, num.zero()) !== 0)
+
       // Create converters for each measure
       const converters = sortedMeasures.map(measure =>
-        toNearest && num.compare(toNearest, num.zero()) !== 0
-          ? this.createToNearestConverter(toNearest, measure)
-          : this.createConverterTo(measure),
+        shouldUseToNearest ? this.createToNearestConverter(toNearest!, measure) : this.createConverterTo(measure),
       )
 
       const one = num.one()
+
+      const textIsSymbol = text === "symbol"
+      const textGetter = sortedMeasures.map(measure =>
+        textIsSymbol ? (_value: N) => measure.getSymbol() : measure.createNameFormatter(),
+      )
 
       return (value: N) => {
         for (let i = 0; i < sortedMeasures.length; i++) {
@@ -386,7 +392,7 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
           if (num.compare(convertedValue, one) >= 0) {
             return {
               value: convertedValue,
-              symbol: sortedMeasures[i].getSymbol(),
+              text: textGetter[i](convertedValue),
               converter: converters[i],
             }
           }
@@ -396,9 +402,101 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
         const lastIndex = sortedMeasures.length - 1
         return {
           value: converters[lastIndex](value),
-          symbol: sortedMeasures[lastIndex].getSymbol(),
+          text: textGetter[lastIndex](value),
           converter: converters[lastIndex],
         }
+      }
+    }
+
+    public createMultiUnitFormatter(
+      measures: GenericMeasure<N, Basis, U, AllowedPrefixes>[],
+      toNearest?: N,
+      text: "symbol" | "name" = "symbol",
+      keepZeros: boolean = false,
+    ): (value: N) => {
+      value: N
+      text: string
+    }[] {
+      if (measures.length === 0) {
+        throw new Error(`must have at least one Measure`)
+      }
+
+      // Sort measures by value from largest to smallest
+      const sortedMeasures = [...measures].sort((a, b) => num.compare(b.value, a.value))
+
+      const shouldUseToNearest = Boolean(toNearest && num.compare(toNearest, num.zero()) !== 0)
+
+      // Create converters for each measure from this Measure to the other one
+      const converters = sortedMeasures.map((measure, index) =>
+        index === sortedMeasures.length - 1 && shouldUseToNearest
+          ? this.createToNearestConverter(toNearest!, measure)
+          : this.createConverterTo(measure),
+      )
+
+      // Create converters back the other way
+      const reverseConverter = sortedMeasures.map(measure => measure.createConverterTo(this))
+
+      const textIsSymbol = text === "symbol"
+      const textGetters = sortedMeasures.map(measure =>
+        textIsSymbol ? (_value: N) => measure.getSymbol() : measure.createNameFormatter(),
+      )
+
+      // if there's only one sortedMeasure, just do the direct conversion
+      if (sortedMeasures.length === 1) {
+        return (value: N) => {
+          return [
+            {
+              value: converters[0](value),
+              text: textGetters[0](value),
+            },
+          ]
+        }
+      }
+
+      const one = num.one()
+
+      return (value: N) => {
+        let multiplier = one
+        // Handle negative numbers
+        if (num.compare(value, num.zero()) < 0) {
+          multiplier = num.neg(multiplier)
+        }
+
+        let bucket = num.abs(value)
+
+        const result: { value: N; text: string }[] = []
+
+        for (let i = 0; i < sortedMeasures.length - 1; i++) {
+          const convertedValue = converters[i](bucket)
+          const flooredValue = num.floor(convertedValue)
+
+          if (num.compare(convertedValue, num.one()) >= 0) {
+            result.push({
+              value: num.mult(flooredValue, multiplier),
+              text: textGetters[i](flooredValue),
+            })
+            multiplier = one
+            bucket = num.sub(bucket, reverseConverter[i](flooredValue))
+          } else if (keepZeros) {
+            result.push({
+              value: num.zero(),
+              text: textGetters[i](num.zero()),
+            })
+          }
+        }
+
+        // handle the remainder
+        const lastIndex = sortedMeasures.length - 1
+        const lastConvertedValue = converters[lastIndex](bucket)
+
+        if (num.compare(lastConvertedValue, num.zero()) > 0 || result.length === 0) {
+          result.push({
+            value: num.mult(lastConvertedValue, multiplier),
+            text: textGetters[lastIndex](lastConvertedValue),
+          })
+        }
+
+        return result
       }
     }
 

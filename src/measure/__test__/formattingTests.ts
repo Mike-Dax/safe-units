@@ -12,10 +12,17 @@ describe("Formatting helpers", () => {
   const unitSystem = UnitSystem.from({
     length: "m",
     mass: "kg",
+    time: "s",
   })
 
   const meters = Measure.dimension(unitSystem, "length", "meter", "meters", "m", ALLOW_SI_PREFIX)
+  const kilogram = Measure.dimension(unitSystem, "mass", "gram", "grams", "g", ALLOW_SI_PREFIX)
   const feet = Measure.of(0.3048, meters, "foot", "feet", "ft")
+  const inches = Measure.of(1 / 12, feet, "inch", "inches", "in")
+
+  const seconds = Measure.dimension(unitSystem, "time", "second", "seconds", "s")
+  const minutes = Measure.of(60, seconds, "minute", "minutes", "m")
+  const hours = Measure.of(60, minutes, "hour", "hours", "hr")
 
   it("symbol getter", () => {
     const symbol = meters.getSymbol()
@@ -142,7 +149,7 @@ describe("Formatting helpers", () => {
       autoPrefixer(50_000), // m -> 50km
       autoPrefixer(100_000), // m -> 100km
       autoPrefixer(500_000), // m -> 500km
-    ].map(({ value, symbol }) => `${value}${symbol}`)
+    ].map(({ value, text }) => `${value}${text}`)
 
     expect(vals).toEqual([
       "0µm", //
@@ -168,6 +175,130 @@ describe("Formatting helpers", () => {
       "50km",
       "100km",
       "500km",
+    ])
+  })
+
+  it("auto-prefixing formatter to nearest 0.25", () => {
+    const kilo = Measure.prefix("kilo", "k", 1e3, ALLOW_SI_PREFIX)
+    const centi = Measure.prefix("centi", "c", 0.01, ALLOW_SI_PREFIX)
+    const milli = Measure.prefix("milli", "m", 1e-3, ALLOW_SI_PREFIX)
+    const micro = Measure.prefix("micro", "µ", 1e-6, ALLOW_SI_PREFIX)
+
+    const autoPrefixer = meters.createDynamicFormatter([
+      meters,
+      kilo(meters),
+      centi(meters),
+      milli(meters),
+      micro(meters),
+    ])
+
+    const vals = [
+      autoPrefixer(0), // m -> 0µm
+      autoPrefixer(0.00001), // m -> 10µm
+      autoPrefixer(0.00005), // m -> 50µm
+      autoPrefixer(0.0001), // m -> 100µm
+      autoPrefixer(0.0005), // m -> 500µm
+      autoPrefixer(0.001), // m -> 1mm
+      autoPrefixer(0.005), // m -> 5mm
+      autoPrefixer(0.01), // m -> 1cm
+      autoPrefixer(0.05), // m -> 5cm
+      autoPrefixer(0.1), // m -> 10cm
+      autoPrefixer(0.5), // m -> 50cm
+      autoPrefixer(1), // m -> 1m
+      autoPrefixer(5), // m -> 5m
+      autoPrefixer(10), // m -> 10m
+      autoPrefixer(50), // m -> 50m
+      autoPrefixer(100), // m -> 100m
+      autoPrefixer(500), // m -> 500m
+      autoPrefixer(1_000), // m -> 1km
+      autoPrefixer(5_000), // m -> 5km
+      autoPrefixer(10_000), // m -> 10km
+      autoPrefixer(50_000), // m -> 50km
+      autoPrefixer(100_000), // m -> 100km
+      autoPrefixer(500_000), // m -> 500km
+    ].map(({ value, text }) => `${value}${text}`)
+
+    expect(vals).toEqual([
+      "0µm", //
+      "10µm",
+      "50µm",
+      "100µm",
+      "500µm",
+      "1mm",
+      "5mm",
+      "1cm",
+      "5cm",
+      "10cm",
+      "50cm",
+      "1m",
+      "5m",
+      "10m",
+      "50m",
+      "100m",
+      "500m",
+      "1km",
+      "5km",
+      "10km",
+      "50km",
+      "100km",
+      "500km",
+    ])
+  })
+
+  it("multi-unit formatter for feet and inches", () => {
+    const autoPrefixer = meters.createMultiUnitFormatter([feet, inches])
+
+    const one = autoPrefixer(1)
+    const zero = autoPrefixer(0)
+    const negOne = autoPrefixer(-1)
+    const two = autoPrefixer(2.1)
+
+    expect(one[0].value).toBeCloseTo(3)
+    expect(one[0].text).toBe("ft")
+    expect(one[1].value).toBeCloseTo(3.37)
+    expect(one[1].text).toBe("in")
+
+    // zero provides 0 of the smallest unit
+    expect(zero[0].value).toBeCloseTo(0)
+    expect(zero[0].text).toBe("in")
+
+    // negative numbers have the first non-zero element as a zero
+    expect(negOne[0].value).toBeCloseTo(-3)
+    expect(negOne[0].text).toBe("ft")
+    expect(negOne[1].value).toBeCloseTo(3.37)
+    expect(negOne[1].text).toBe("in")
+
+    expect(two[0].value).toBeCloseTo(6)
+    expect(two[0].text).toBe("ft")
+    expect(two[1].value).toBeCloseTo(10.677)
+    expect(two[1].text).toBe("in")
+  })
+
+  it("multi-unit formatter for feet and inches with custom symbols", () => {
+    const autoPrefixer = meters.createMultiUnitFormatter(
+      [
+        feet.withIdentifiers("foot", "feet", `"`), //
+        inches.withIdentifiers("inch", "inches", `'`),
+      ],
+      1,
+    )
+
+    const sixFour = autoPrefixer(1.92)
+      .map(({ value, text }) => `${value}${text}`)
+      .join("")
+
+    expect(sixFour).toBe(`6"4'`)
+  })
+
+  it("multi-unit toNearest naming formatter for hours, minutes, seconds", () => {
+    const autoPrefixer = seconds.createMultiUnitFormatter([minutes, hours, seconds], 0.25, "name")
+
+    const one = autoPrefixer(525675.285)
+
+    expect(one).toEqual([
+      { value: 146, text: "hours" },
+      { value: 1, text: "minute" },
+      { value: 15.25, text: "seconds" },
     ])
   })
 })

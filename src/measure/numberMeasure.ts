@@ -36,6 +36,7 @@ const numericOps: NumericOperations<number> = {
   pow: (x, y) => Math.pow(x, y),
   reciprocal: x => 1 / x,
   round: x => Math.round(x),
+  floor: x => Math.floor(x),
   compare: (x, y) => x - y,
   format: x => `${x}`,
 }

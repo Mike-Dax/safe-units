@@ -50,6 +50,7 @@ describe("Generic measures", () => {
       mult: (x, y) => x * y,
       div: (x, y) => x / y,
       round: x => Math.round(x),
+      floor: x => Math.floor(x),
       pow: (x, y) => Math.pow(x, y),
       reciprocal: x => 1 / x,
       compare: (x, y) => x - y,

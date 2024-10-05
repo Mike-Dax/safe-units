@@ -22,6 +22,7 @@ const WrappedMeasure = createMeasureType<WrappedNumber>({
   pow: (x, y) => wrap(Math.pow(x.value, y)),
   reciprocal: x => wrap(1 / x.value),
   round: x => wrap(Math.round(x.value)),
+  floor: x => wrap(Math.floor(x.value)),
   compare: (x, y) => x.value - y.value,
   format: x => `${x}`,
 })
