@@ -28,14 +28,14 @@ describe("Number measures", () => {
 
   describe("construction", () => {
     it("should construct from a number of and a unit", () => {
-      const measure = Measure.of(10, mps2)
+      const measure = Measure.from(10, mps2)
       expect(measure.value).toBe(10)
       expect(measure.unit).toEqual(mps2.unit)
     })
 
     it("should construct from a number and another measure", () => {
-      const kilometer = Measure.of(1000, meters)
-      const measure = Measure.of(5.2, kilometer)
+      const kilometer = Measure.from(1000, meters)
+      const measure = Measure.from(5.2, kilometer)
       expect(measure.value).toBe(5200)
       expect(measure.unit).toEqual(meters.unit)
     })
@@ -61,7 +61,7 @@ describe("Number measures", () => {
     })
 
     it("should not apply a prefix when a symbol is not present on the base unit", () => {
-      const blargs = Measure.of(1e-3, meters)
+      const blargs = Measure.from(1e-3, meters)
       const kblargs = kilo(blargs)
       expect(kblargs.symbol).toBeUndefined()
       expect(kblargs.value).toBe(1)
@@ -70,100 +70,100 @@ describe("Number measures", () => {
 
   describe("math", () => {
     it("arithmetic", () => {
-      expect(Measure.add(Measure.of(5, mps), Measure.of(-5, mps))).toEqual(Measure.of(0, mps))
-      expect(Measure.subtract(Measure.of(5, mps), Measure.of(-5, mps))).toEqual(Measure.of(10, mps))
-      expect(Measure.multiply(Measure.of(5, mps), Measure.of(10, seconds))).toEqual(Measure.of(50, meters))
-      expect(Measure.divide(Measure.of(50, meters), Measure.of(10, seconds))).toEqual(Measure.of(5, mps))
+      expect(Measure.add(Measure.from(5, mps), Measure.from(-5, mps))).toEqual(Measure.from(0, mps))
+      expect(Measure.subtract(Measure.from(5, mps), Measure.from(-5, mps))).toEqual(Measure.from(10, mps))
+      expect(Measure.multiply(Measure.from(5, mps), Measure.from(10, seconds))).toEqual(Measure.from(50, meters))
+      expect(Measure.divide(Measure.from(50, meters), Measure.from(10, seconds))).toEqual(Measure.from(5, mps))
     })
 
     it("abs", () => {
-      expect(Measure.abs(Measure.of(-10, mps))).toEqual(Measure.of(10, mps))
+      expect(Measure.abs(Measure.from(-10, mps))).toEqual(Measure.from(10, mps))
     })
 
     it("ceil", () => {
-      expect(Measure.ceil(Measure.of(3.4, mps))).toEqual(Measure.of(4, mps))
+      expect(Measure.ceil(Measure.from(3.4, mps))).toEqual(Measure.from(4, mps))
     })
 
     it("floor", () => {
-      expect(Measure.floor(Measure.of(7.8, mps))).toEqual(Measure.of(7, mps))
+      expect(Measure.floor(Measure.from(7.8, mps))).toEqual(Measure.from(7, mps))
     })
 
     it("hypot", () => {
-      expect(Measure.hypot(Measure.of(3, meters), Measure.of(4, meters))).toEqual(Measure.of(5, meters))
+      expect(Measure.hypot(Measure.from(3, meters), Measure.from(4, meters))).toEqual(Measure.from(5, meters))
     })
 
     it("max", () => {
-      expect(Measure.max(Measure.of(10, mps), Measure.of(5, mps), Measure.of(15, mps))).toEqual(Measure.of(15, mps))
+      expect(Measure.max(Measure.from(10, mps), Measure.from(5, mps), Measure.from(15, mps))).toEqual(Measure.from(15, mps))
     })
 
     it("min", () => {
-      expect(Measure.min(Measure.of(10, mps), Measure.of(5, mps), Measure.of(15, mps))).toEqual(Measure.of(5, mps))
+      expect(Measure.min(Measure.from(10, mps), Measure.from(5, mps), Measure.from(15, mps))).toEqual(Measure.from(5, mps))
     })
 
     it("round", () => {
-      expect(Measure.round(Measure.of(7.8, mps))).toEqual(Measure.of(8, mps))
+      expect(Measure.round(Measure.from(7.8, mps))).toEqual(Measure.from(8, mps))
     })
 
     it("sum", () => {
-      expect(Measure.sum(Measure.of(10, mps), Measure.of(5, mps), Measure.of(15, mps))).toEqual(Measure.of(30, mps))
+      expect(Measure.sum(Measure.from(10, mps), Measure.from(5, mps), Measure.from(15, mps))).toEqual(Measure.from(30, mps))
     })
 
     it("trunc", () => {
-      expect(Measure.trunc(Measure.of(-7.8, mps))).toEqual(Measure.of(-7, mps))
+      expect(Measure.trunc(Measure.from(-7.8, mps))).toEqual(Measure.from(-7, mps))
     })
   })
 
   describe("arithmetic", () => {
     it("should negate", () => {
-      const value = Measure.of(10, mps)
-      expect(value.negate()).toEqual(Measure.of(-10, mps))
+      const value = Measure.from(10, mps)
+      expect(value.negate()).toEqual(Measure.from(-10, mps))
     })
 
     it("should add", () => {
-      const left = Measure.of(10, mps)
-      const right = Measure.of(5, mps)
-      expect(left.plus(right)).toEqual(Measure.of(15, mps))
+      const left = Measure.from(10, mps)
+      const right = Measure.from(5, mps)
+      expect(left.plus(right)).toEqual(Measure.from(15, mps))
     })
 
     it("should subtract", () => {
-      const left = Measure.of(10, seconds)
-      const right = Measure.of(5, seconds)
-      expect(left.minus(right)).toEqual(Measure.of(5, seconds))
+      const left = Measure.from(10, seconds)
+      const right = Measure.from(5, seconds)
+      expect(left.minus(right)).toEqual(Measure.from(5, seconds))
     })
 
     it("should multiply", () => {
-      const left = Measure.of(10, mps)
-      const right = Measure.of(5, seconds)
-      expect(left.times(right)).toEqual(Measure.of(50, meters))
+      const left = Measure.from(10, mps)
+      const right = Measure.from(5, seconds)
+      expect(left.times(right)).toEqual(Measure.from(50, meters))
     })
 
     it("should divide", () => {
-      const left = Measure.of(10, mps)
-      const right = Measure.of(5, seconds)
-      expect(left.over(right)).toEqual(Measure.of(2, mps2))
-      expect(left.per(right)).toEqual(Measure.of(2, mps2))
-      expect(left.div(right)).toEqual(Measure.of(2, mps2))
+      const left = Measure.from(10, mps)
+      const right = Measure.from(5, seconds)
+      expect(left.over(right)).toEqual(Measure.from(2, mps2))
+      expect(left.per(right)).toEqual(Measure.from(2, mps2))
+      expect(left.div(right)).toEqual(Measure.from(2, mps2))
     })
 
     it("should scale", () => {
-      const value = Measure.of(10, mps)
-      expect(value.scale(2)).toEqual(Measure.of(20, mps))
+      const value = Measure.from(10, mps)
+      expect(value.scale(2)).toEqual(Measure.from(20, mps))
     })
 
     it("should exponentiate", () => {
-      const value = Measure.of(10, meters)
+      const value = Measure.from(10, meters)
 
-      expect(value.inverse()).toEqual(Measure.of(0.1, meters.inverse()))
-      expect(value.reciprocal()).toEqual(Measure.of(0.1, meters.inverse()))
-      expect(value.squared()).toEqual(Measure.of(100, meters.squared()))
-      expect(value.cubed()).toEqual(Measure.of(1000, meters.cubed()))
+      expect(value.inverse()).toEqual(Measure.from(0.1, meters.inverse()))
+      expect(value.reciprocal()).toEqual(Measure.from(0.1, meters.inverse()))
+      expect(value.squared()).toEqual(Measure.from(100, meters.squared()))
+      expect(value.cubed()).toEqual(Measure.from(1000, meters.cubed()))
     })
   })
 
   describe("comparison", () => {
-    const zero = Measure.of(0, meters)
-    const five = Measure.of(5, meters)
-    const ten = Measure.of(10, meters)
+    const zero = Measure.from(0, meters)
+    const five = Measure.from(5, meters)
+    const ten = Measure.from(10, meters)
 
     it("should compare less than", () => {
       expect(five.lt(zero)).toBe(false)
@@ -204,11 +204,11 @@ describe("Number measures", () => {
 
   describe("symbols", () => {
     it("should assign a symbol via .of()", () => {
-      expect(Measure.of(1000, meters, "km").symbol).toBe("km")
+      expect(Measure.from(1000, meters, "km").symbol).toBe("km")
     })
 
     it("should copy assign a symbol via .withIdentifiers()", () => {
-      const original = Measure.of(1000, meters)
+      const original = Measure.from(1000, meters)
       const result = original.withIdentifiers("km")
       expect(result).not.toBe(original)
       expect(original.symbol).toBeUndefined()
@@ -216,8 +216,8 @@ describe("Number measures", () => {
     })
 
     it("should not pass along symbols through operations", () => {
-      const km = Measure.of(1000, meters.squared()).withIdentifiers("km2")
-      const dm = Measure.of(10, meters.squared()).withIdentifiers("dm2")
+      const km = Measure.from(1000, meters.squared()).withIdentifiers("km2")
+      const dm = Measure.from(10, meters.squared()).withIdentifiers("dm2")
       expect(km.negate().symbol).toBeUndefined()
       expect(km.squared().symbol).toBeUndefined()
       expect(km.inverse().symbol).toBeUndefined()
@@ -279,49 +279,49 @@ describe("Number measures", () => {
     })
 
     it("should not format using symbol even if present", () => {
-      expect(Measure.of(5, meters.squared()).withIdentifiers("m2").toString()).toBe("5 m^2")
+      expect(Measure.from(5, meters.squared()).withIdentifiers("m2").toString()).toBe("5 m^2")
       expect(Measure.dimensionless(unitSystem, 0).withIdentifiers("rad").toString()).toBe("0")
     })
 
     it("should format measures as other measures with symbols", () => {
-      const kilometers = Measure.of(1000, meters, "km")
-      expect(Measure.of(10000, meters).in(kilometers)).toBe("10 km")
+      const kilometers = Measure.from(1000, meters, "km")
+      expect(Measure.from(10000, meters).in(kilometers)).toBe("10 km")
     })
 
     it("should use normal formatting if the other measure has no symbol", () => {
-      const kilometers = Measure.of(1000, meters)
-      expect(Measure.of(1000, meters).in(kilometers)).toBe("1000 m")
+      const kilometers = Measure.from(1000, meters)
+      expect(Measure.from(1000, meters).in(kilometers)).toBe("1000 m")
     })
 
     it("should get value in another unit", () => {
-      const kilometers = Measure.of(1000, meters)
-      expect(Measure.of(2000, meters).valueIn(kilometers)).toBe(2)
-      expect(Measure.of(500, meters).valueIn(kilometers)).toBe(0.5)
+      const kilometers = Measure.from(1000, meters)
+      expect(Measure.from(2000, meters).valueIn(kilometers)).toBe(2)
+      expect(Measure.from(500, meters).valueIn(kilometers)).toBe(0.5)
     })
 
     it("should use a custom formatter for values if provided", () => {
-      expectFormat(Measure.of(3.14159, meters), "3.14 m", {
+      expectFormat(Measure.from(3.14159, meters), "3.14 m", {
         formatValue: value => value.toPrecision(3),
       })
     })
 
     it("should use a custom formatter for units if provided", () => {
-      expectFormat(Measure.of(3.14159, meters), "3.14159 meters", {
+      expectFormat(Measure.from(3.14159, meters), "3.14159 meters", {
         formatUnit: () => "meters",
       })
     })
 
     it("should use both custom formatters if provided", () => {
-      expectFormat(Measure.of(3.14159, meters), "3.142 meters", {
+      expectFormat(Measure.from(3.14159, meters), "3.142 meters", {
         formatValue: value => value.toPrecision(4),
         formatUnit: () => "meters",
       })
     })
 
     it("should not use a custom formatter for units when expressing in terms of another measure", () => {
-      const kilometers = Measure.of(1000, meters, "km")
+      const kilometers = Measure.from(1000, meters, "km")
       expect(
-        Measure.of(20, kilometers).in(kilometers, {
+        Measure.from(20, kilometers).in(kilometers, {
           formatValue: value => value.toExponential(),
           formatUnit: () => "kilometers",
         }),
@@ -329,9 +329,9 @@ describe("Number measures", () => {
     })
 
     it("should use a custom formatter for units when expressing in terms of another unit with no symbol", () => {
-      const kilometers = Measure.of(1000, meters)
+      const kilometers = Measure.from(1000, meters)
       expect(
-        Measure.of(20, kilometers).in(kilometers, {
+        Measure.from(20, kilometers).in(kilometers, {
           formatUnit: () => "meters",
         }),
       ).toBe("20000 meters")
@@ -340,21 +340,21 @@ describe("Number measures", () => {
 
   describe("utils", () => {
     it("should clone", () => {
-      const original = Measure.of(100, meters)
+      const original = Measure.from(100, meters)
       const copy = original.clone()
       expect(original).not.toBe(copy)
       expect(original).toEqual(copy)
     })
 
     it("should perform unsafe mappings", () => {
-      const original = Measure.of(1, meters)
+      const original = Measure.from(1, meters)
       const valueMapped = original.unsafeMap(value => value + 1)
       const unitMapped = original.unsafeMap(
         value => value + 1,
         unit => ({ ...unit, time: -1 as const }),
       )
-      expect(valueMapped).toEqual(Measure.of(2, meters))
-      expect(unitMapped).toEqual(Measure.of(2, meters.per(seconds)))
+      expect(valueMapped).toEqual(Measure.from(2, meters))
+      expect(unitMapped).toEqual(Measure.from(2, meters.per(seconds)))
     })
   })
 })

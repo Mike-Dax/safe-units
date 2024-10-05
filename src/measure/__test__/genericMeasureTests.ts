@@ -16,26 +16,26 @@ describe("Generic measures", () => {
 
     it("unary wrapper", () => {
       const increment = wrapUnaryFn((x: number) => x + 1)
-      const result = increment(Measure.of(10, meters))
-      expect(result).toEqual(Measure.of(11, meters))
+      const result = increment(Measure.from(10, meters))
+      expect(result).toEqual(Measure.from(11, meters))
     })
 
     it("binary wrapper", () => {
       const measureAdd = wrapBinaryFn(add)
-      const result = measureAdd(Measure.of(5, meters), Measure.of(10, meters))
-      expect(result).toEqual(Measure.of(15, meters))
+      const result = measureAdd(Measure.from(5, meters), Measure.from(10, meters))
+      expect(result).toEqual(Measure.from(15, meters))
     })
 
     it("spread wrapper", () => {
       const sum = wrapSpreadFn((...values: number[]) => values.reduce(add, 0))
-      const result = sum(Measure.of(5, meters), Measure.of(10, meters), Measure.of(15, meters))
-      expect(result).toEqual(Measure.of(30, meters))
+      const result = sum(Measure.from(5, meters), Measure.from(10, meters), Measure.from(15, meters))
+      expect(result).toEqual(Measure.from(30, meters))
     })
 
     it("reducer wrapper", () => {
       const sum = wrapReducerFn(add)
-      const result = sum(Measure.of(5, meters), Measure.of(10, meters), Measure.of(15, meters))
-      expect(result).toEqual(Measure.of(30, meters))
+      const result = sum(Measure.from(5, meters), Measure.from(10, meters), Measure.from(15, meters))
+      expect(result).toEqual(Measure.from(30, meters))
     })
   })
 

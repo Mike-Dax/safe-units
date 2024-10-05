@@ -41,18 +41,18 @@ interface GenericMeasureFactory<N> {
   /**
    * Creates a measure as a multiple of another measure.
    * @param value the number of measures
-   * @param quantity the measure to be multiplied
+   * @param measure the measure to be multiplied
    * @param symbol an optional unit symbol for this measure
    * @returns a measure of value number of quantities.
    */
-  of<
+  from<
     Basis,
     U extends Unit<Basis>,
     AllowedPrefixes extends PrefixMask,
     OverridingAllowedPrefixes extends PrefixMask = AllowedPrefixes,
   >(
     value: N,
-    quantity: GenericMeasure<N, Basis, U, AllowedPrefixes>,
+    measure: GenericMeasure<N, Basis, U, AllowedPrefixes>,
     nameSingular: string,
     namePlural: string,
     symbol: string,
@@ -95,7 +95,7 @@ export function createMeasureType<N, S extends {} = {}>(
       createMeasure(value, unitSystem.createDimensionlessUnit(), unitSystem, "", "", ""),
     dimension: (unitSystem, dimension, nameSingular, namePlural, symbol) =>
       createMeasure(num.one(), unitSystem.createDimensionUnit(dimension), unitSystem, nameSingular, namePlural, symbol),
-    of: (value, quantity, nameSingular, namePlural, symbol, allowedPrefixes) =>
+    from: (value, quantity, nameSingular, namePlural, symbol, allowedPrefixes) =>
       createMeasure(
         num.mult(value, quantity.value),
         quantity.unit,

@@ -17,12 +17,12 @@ describe("Formatting helpers", () => {
 
   const meters = Measure.dimension(unitSystem, "length", "meter", "meters", "m", ALLOW_SI_PREFIX)
   const kilogram = Measure.dimension(unitSystem, "mass", "gram", "grams", "g", ALLOW_SI_PREFIX)
-  const feet = Measure.of(0.3048, meters, "foot", "feet", "ft")
-  const inches = Measure.of(1 / 12, feet, "inch", "inches", "in")
+  const feet = Measure.from(0.3048, meters, "foot", "feet", "ft")
+  const inches = Measure.from(1 / 12, feet, "inch", "inches", "in")
 
   const seconds = Measure.dimension(unitSystem, "time", "second", "seconds", "s")
-  const minutes = Measure.of(60, seconds, "minute", "minutes", "m")
-  const hours = Measure.of(60, minutes, "hour", "hours", "hr")
+  const minutes = Measure.from(60, seconds, "minute", "minutes", "m")
+  const hours = Measure.from(60, minutes, "hour", "hours", "hr")
 
   it("symbol getter", () => {
     const symbol = meters.getSymbol()

@@ -19,10 +19,10 @@ type FrameRate = typeof FrameRate;
 
 const fps: FrameRate = frames.per(seconds).withIdentifiers("fps");
 
-const minFrameRate = Measure.of(60, fps);
+const minFrameRate = Measure.from(60, fps);
 
-const measuredFrames = Measure.of(8000, frames);
-const elapsedTime = Measure.of(120, seconds);
+const measuredFrames = Measure.from(8000, frames);
+const elapsedTime = Measure.from(120, seconds);
 const measuredFps: FrameRate = measuredFrames.over(elapsedTime);
 
 if (measuredFps.lt(minFrameRate)) {

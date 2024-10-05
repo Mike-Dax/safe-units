@@ -1,8 +1,8 @@
 import { Acceleration, Measure, Velocity, meters, seconds } from "safe-units";
 
 // START
-const distance = Measure.of(30, meters);
-const time = Measure.of(10, seconds);
+const distance = Measure.from(30, meters);
+const time = Measure.from(10, seconds);
 
 // Works! The result of distance over time is velocity
 const velocity: Velocity = distance.over(time); // 300 m*s

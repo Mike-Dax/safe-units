@@ -4,6 +4,6 @@ import { Measure, meters } from "safe-units";
 const kilo = Measure.prefix("k", 1000);
 const kilometers = kilo(meters); // 1000 m
 
-const distance = Measure.of(20, kilometers); // 20000 m
+const distance = Measure.from(20, kilometers); // 20000 m
 distance.in(kilometers); // 20 km
 // END

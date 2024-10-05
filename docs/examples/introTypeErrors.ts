@@ -1,7 +1,7 @@
 import { Force, hours, Length, Measure, meters, seconds, Time } from "safe-units";
 
-const length: Length = Measure.of(10, meters);
-const time: Time = Measure.of(10, seconds);
+const length: Length = Measure.from(10, meters);
+const time: Time = Measure.from(10, seconds);
 
 // @ts-expect-error - Measures of different units cannot be added
 length.plus(time);

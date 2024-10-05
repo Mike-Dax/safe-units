@@ -1,8 +1,8 @@
 // START
 import { Length, Measure, meters, seconds, Time, Velocity } from "safe-units";
 
-const length: Length = Measure.of(30, meters);
-const time: Time = Measure.of(15, seconds);
+const length: Length = Measure.from(30, meters);
+const time: Time = Measure.from(15, seconds);
 const velocity: Velocity = length.over(time);
 
 console.log(length.toString()); // 30 m

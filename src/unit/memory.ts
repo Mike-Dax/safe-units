@@ -3,7 +3,7 @@ import { Measure } from "../measure/numberMeasure"
 import { bits } from "./base"
 import { mega, milli, volts } from "./metric"
 
-export const bytes = Measure.of(8, bits, "byte", "bytes", "B", {
+export const bytes = Measure.from(8, bits, "byte", "bytes", "B", {
   PREFIX_BINARY_MULTIPLE: true,
   PREFIX_SI_MULTIPLE: true, // Also allow 'kilo' bytes, etc
 })

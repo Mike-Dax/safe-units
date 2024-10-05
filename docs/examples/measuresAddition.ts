@@ -1,10 +1,10 @@
 import { Measure, feet, meters, minutes } from "safe-units";
 
 // START
-const d1 = Measure.of(30, meters);
-const d2 = Measure.of(10, meters);
-const d3 = Measure.of(100, feet);
-const t1 = Measure.of(2, minutes);
+const d1 = Measure.from(30, meters);
+const d2 = Measure.from(10, meters);
+const d3 = Measure.from(100, feet);
+const t1 = Measure.from(2, minutes);
 
 const sum1 = d1.plus(d2); // 40 m
 const sum2 = Measure.add(d1, d2); // 40 m

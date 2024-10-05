@@ -53,7 +53,7 @@ export const tan = wrapTrigFn(Math.tan)
  * @returns an angle
  */
 export function atan2(y: Length, x: Length): PlaneAngle {
-  return Measure.of(Math.atan2(y.value, x.value), radians)
+  return Measure.from(Math.atan2(y.value, x.value), radians)
 }
 
 type Dimensionless = GenericMeasure<number, SIUnitSystem, DimensionlessUnit<SIUnitSystem>>
@@ -63,5 +63,5 @@ function wrapTrigFn(f: (x: number) => number): (angle: PlaneAngle) => Dimensionl
 }
 
 function wrapInverseTrigFn(f: (x: number) => number): (angle: Dimensionless) => PlaneAngle {
-  return angle => Measure.of(f(angle.value), radians)
+  return angle => Measure.from(f(angle.value), radians)
 }

@@ -11,12 +11,12 @@ describe(`represent`, () => {
     // const inputUnit = kilo(meters)
     const inputUnit = kilo(meters)
     const inputAmountEach = 1
-    const inputMeasure = Measure.of(inputAmountEach, inputUnit) // where each is a quarter kilometer
+    const inputMeasure = Measure.from(inputAmountEach, inputUnit) // where each is a quarter kilometer
 
     // They provide an output unit, and a default unit of precision
     const outputUnit = meters
     const outputUnitPrecision = 100 // must be non-zero
-    const outputUnitCombined = Measure.of(outputUnitPrecision, outputUnit)
+    const outputUnitCombined = Measure.from(outputUnitPrecision, outputUnit)
 
     const memoisedFactor = inputMeasure.valueIn(outputUnitCombined)
     const memoisedRecipricol = 1 / outputUnitPrecision

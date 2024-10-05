@@ -10,7 +10,7 @@ const BigNumberMeasure = createMeasureType<BigNumber>(numericOps);
 const { meters, kilograms, seconds, ...rest } = createSIBaseUnits(BigNumberMeasure);
 
 const bigValue = new BigNumber("3.14");
-const bigLength: Length<BigNumber> = BigNumberMeasure.of(bigValue, meters);
+const bigLength: Length<BigNumber> = BigNumberMeasure.from(bigValue, meters);
 // END
 
 console.log(bigLength, meters, kilograms, seconds, rest);
