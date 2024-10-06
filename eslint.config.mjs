@@ -20,7 +20,7 @@ export default tseslint.config(
       "@typescript-eslint/ban-types": "off",
       "@/linebreak-style": ["error", "unix"],
       "prettier/prettier": [
-        "error",
+        "warn",
         {
           arrowParens: "avoid",
           printWidth: 120,

@@ -1,10 +1,53 @@
+import { createNameFormatter } from "../format"
 import { NumericOperations } from "../genericMeasure"
 import { createMeasureType } from "../genericMeasureFactory"
 import { wrapBinaryFn, wrapReducerFn, wrapSpreadFn, wrapUnaryFn } from "../genericMeasureUtils"
 import { Measure } from "../numberMeasure"
 import { UnitSystem } from "../unitSystem"
 
-describe("Formatting helpers", () => {
+describe("Individual measure formatters", () => {
+  const ALLOW_SI_PREFIX = {
+    PREFIX_SI: true,
+  } as const
+
+  const unitSystem = UnitSystem.from({
+    length: "m",
+    mass: "kg",
+    time: "s",
+  })
+
+  const meters = Measure.dimension(unitSystem, "length", "meter", "meters", "m", ALLOW_SI_PREFIX)
+  const kilogram = Measure.dimension(unitSystem, "mass", "gram", "grams", "g", ALLOW_SI_PREFIX)
+  const feet = Measure.from(0.3048, meters, "foot", "feet", "ft")
+  const inches = Measure.from(1 / 12, feet, "inch", "inches", "in")
+
+  const seconds = Measure.dimension(unitSystem, "time", "second", "seconds", "s")
+  const minutes = Measure.from(60, seconds, "minute", "minutes", "m")
+  const hours = Measure.from(60, minutes, "hour", "hours", "hr")
+
+  it("symbol formatter", () => {
+    const one = meters.format(1)
+    const two = meters.format(2)
+    console.log(one, two)
+  })
+
+  it("fully custom formatter", () => {
+    const one = meters.format(1, {
+      round: value => `${value.toFixed(3)}`,
+      root: (value, { symbol }) => symbol,
+      prefix: (measure, { name }) => `${name}${measure}`,
+      times: (left, right) => `${left} * ${right}`,
+      over: (numerator, denominator) => `${numerator} / ${denominator}`,
+      pow: (measure, power) => `${measure}^${power}`,
+      reciprocal: measure => `1 / ${measure}`,
+      reduce: (rounded, unit) => `${rounded}${unit}`,
+    })
+
+    console.log(one)
+  })
+})
+
+describe("Complex Formatting helpers", () => {
   const ALLOW_SI_PREFIX = {
     PREFIX_SI: true,
   } as const
@@ -302,3 +345,5 @@ describe("Formatting helpers", () => {
     ])
   })
 })
+
+// Pass a formatter to createMultiUnitFormatter, createDynamicFormatter

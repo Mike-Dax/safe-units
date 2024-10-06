@@ -1,6 +1,5 @@
-import { defaultFormatUnit } from "./format"
-import { GenericMeasure, MeasureFormatter, NumericOperations } from "./genericMeasure"
-import { PrefixFn } from "./genericMeasureUtils"
+import { createNameFormatter, createSymbolFormatter } from "./format"
+import { GenericMeasure, MeasureFormatter, NumericOperations, MeasureOperation } from "./genericMeasure"
 import { IdentityMask, MarkMaskAsUsed, NO_PREFIX_ALLOWED, PrefixMask } from "./prefixMask"
 import { UnitSystem } from "./unitSystem"
 import {
@@ -26,52 +25,18 @@ interface GenericMeasureClass<N> {
   isMeasure: (value: unknown) => value is GenericMeasure<N, any, any, any>
 }
 
-export type MeasureHistory<N, Basis, U extends Unit<Basis>> =
-  | {
-      type: "prefix"
-      measure: GenericMeasure<N, Basis, U, any>
-      multiplier: number
-      name: string
-      symbol: string
-    }
-  | {
-      type: "times"
-      left: GenericMeasure<N, Basis, U, any>
-      right: GenericMeasure<N, Basis, U, any>
-    }
-  | {
-      type: "over"
-      left: GenericMeasure<N, Basis, U, any>
-      right: GenericMeasure<N, Basis, U, any>
-    }
-  | {
-      type: "pow"
-      measure: GenericMeasure<N, Basis, U, any>
-      power: number
-    }
-  | {
-      type: "reciprocal" // unsure how to represent this with text?
-      measure: GenericMeasure<N, Basis, U, any>
-    }
+// how can we hide the implementation details of depth from the user?
 
 export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasureClass<N> {
-  function getFormatter(formatter: MeasureFormatter<N> | undefined): Required<MeasureFormatter<N>> {
-    if (formatter === undefined) {
-      return {
-        formatValue: num.format,
-        formatUnit: defaultFormatUnit,
-      }
-    } else {
-      return {
-        formatValue: formatter.formatValue || num.format,
-        formatUnit: formatter.formatUnit || defaultFormatUnit,
-      }
-    }
+  function getFormatter<R, O>(formatter: MeasureFormatter<N, R, O> | undefined): MeasureFormatter<N, R, O> {
+    return formatter ?? (createNameFormatter(num) as any)
   }
 
   class Measure<Basis, U extends Unit<Basis>, AllowedPrefixes extends PrefixMask>
     implements GenericMeasure<N, Basis, U, AllowedPrefixes>
   {
+    private operation: MeasureOperation<N>
+
     constructor(
       public readonly value: N,
       public readonly unit: U,
@@ -80,7 +45,13 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
       public readonly namePlural: string,
       public readonly symbol: string,
       public readonly allowedPrefixes: PrefixMask,
-    ) {}
+      operation?: MeasureOperation<N>,
+    ) {
+      this.operation = operation ?? {
+        type: "root",
+        measure: this as GenericMeasure<N, any, any, any>,
+      }
+    }
 
     // Arithmetic
 
@@ -150,6 +121,7 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
         `${name}${this.namePlural}`,
         `${symbol}${this.symbol}`,
         NO_PREFIX_ALLOWED,
+        { type: "prefix", measure: this as GenericMeasure<N, any, any, any>, multiplier, name, symbol },
       ) as GenericMeasure<N, Basis, U, IdentityMask<MarkMaskAsUsed<AllowedPrefixes>>>
     }
 
@@ -164,6 +136,7 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
         this.namePlural,
         this.symbol,
         this.allowedPrefixes,
+        { type: "times", left: this as GenericMeasure<N, any, any, any>, right: other },
       )
     }
 
@@ -178,6 +151,7 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
         this.namePlural,
         this.symbol,
         this.allowedPrefixes,
+        { type: "over", left: this as GenericMeasure<N, any, any, any>, right: other },
       )
     }
 
@@ -192,6 +166,7 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
         this.namePlural,
         this.symbol,
         this.allowedPrefixes,
+        { type: "pow", measure: this as GenericMeasure<N, any, any, any>, power },
       )
     }
 
@@ -204,6 +179,7 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
         this.namePlural,
         this.symbol,
         this.allowedPrefixes,
+        { type: "reciprocal", measure: this as GenericMeasure<N, any, any, any> },
       )
     }
 
@@ -298,23 +274,57 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
     }
 
     // Formatting
-    public toString(formatter?: MeasureFormatter<N>): string {
-      const { formatValue, formatUnit } = getFormatter(formatter)
-      return `${formatValue(this.value)} ${formatUnit(this.unit, this.unitSystem)}`.trimRight()
-    }
+    private innerFormat<O>(value: N, formatter: MeasureFormatter<N, O>) {
+      switch (this.operation.type) {
+        case "prefix":
+          return formatter.prefix(this.operation.measure.format(value, formatter), this.operation)
+        case "times":
+          return formatter.times(
+            this.operation.left.format(value, formatter),
+            this.operation.right.format(value, formatter),
+          )
+        case "over":
+          return formatter.over(
+            this.operation.left.format(value, formatter),
+            this.operation.right.format(value, formatter),
+          )
+        case "pow":
+          return formatter.pow(this.operation.measure.format(value, formatter), this.operation.power)
+        case "reciprocal":
+          return formatter.reciprocal(this.operation.measure.format(value, formatter))
+        case "root":
+          return formatter.root(value, this)
 
-    public in(unit: GenericMeasure<N, Basis, U, AllowedPrefixes>, formatter?: MeasureFormatter<N>): string {
-      if (unit.symbol === undefined) {
-        return this.toString(formatter)
+        default:
+          throw new Error(`unimplemented operation`)
       }
-      const { formatValue } = getFormatter(formatter)
-      const value = formatValue(num.div(this.value, unit.value))
-      return `${value} ${unit.symbol}`
     }
 
-    public valueIn(unit: GenericMeasure<N, Basis, U, AllowedPrefixes>): N {
-      return num.div(this.value, unit.value)
+    public format<O>(value: N, formatter?: MeasureFormatter<N, O>) {
+      const f = getFormatter(formatter)
+
+      const rounded = f.round(value)
+
+      return f.reduce(rounded, this.innerFormat(value, f))
     }
+
+    // public toString(formatter?: MeasureFormatter<N>): string {
+    //   const { formatValue, formatUnit } = getFormatter(formatter)
+    //   return `${formatValue(this.value)} ${formatUnit(this.unit, this.unitSystem)}`.trimRight()
+    // }
+
+    // public in(unit: GenericMeasure<N, Basis, U, AllowedPrefixes>, formatter?: MeasureFormatter<N>): string {
+    //   if (unit.symbol === undefined) {
+    //     return this.toString(formatter)
+    //   }
+    //   const { formatValue } = getFormatter(formatter)
+    //   const value = formatValue(num.div(this.value, unit.value))
+    //   return `${value} ${unit.symbol}`
+    // }
+
+    // public valueIn(unit: GenericMeasure<N, Basis, U, AllowedPrefixes>): N {
+    //   return num.div(this.value, unit.value)
+    // }
 
     public createConverterTo(unit: GenericMeasure<N, Basis, U, AllowedPrefixes>) {
       // This should all get inlined

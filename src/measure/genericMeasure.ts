@@ -11,9 +11,48 @@ import {
   UnitToPower,
 } from "./unitTypeArithmetic"
 
-export interface MeasureFormatter<N> {
-  formatValue?: (value: N) => string
-  formatUnit?: <Basis>(unit: Unit<Basis>, unitSystem: UnitSystem<Basis>) => string
+export type MeasureOperation<N> =
+  | {
+      type: "prefix"
+      measure: GenericMeasure<N, any, any, any>
+      multiplier: N
+      name: string
+      symbol: string
+    }
+  | {
+      type: "times"
+      left: GenericMeasure<N, any, any, any>
+      right: GenericMeasure<N, any, any, any>
+    }
+  | {
+      type: "over"
+      left: GenericMeasure<N, any, any, any>
+      right: GenericMeasure<N, any, any, any>
+    }
+  | {
+      type: "pow"
+      measure: GenericMeasure<N, any, any, any>
+      power: number
+    }
+  | {
+      type: "reciprocal" // unsure how to represent this with text?
+      measure: GenericMeasure<N, any, any, any>
+    }
+  | {
+      type: "root" // the root measure is a cyclical reference to `this`
+      measure: GenericMeasure<N, any, any, any>
+    }
+
+export interface MeasureFormatter<N, R, O> {
+  round: (value: N) => R
+  /** The value is provided to render the singular or plural names */
+  root: (value: N, ident: { symbol: string; nameSingular: string; namePlural: string }) => O
+  prefix: (measure: O, ident: { symbol: string; name: string; multiplier: N }) => O
+  times: (left: O, right: O) => O
+  over: (numerator: O, denominator: O) => O
+  pow: (measure: O, power: number) => O
+  reciprocal: (measure: O) => O
+  reduce: (rounded: R, unit: O) => O
 }
 
 /** The set of numeric operations required to fully represent a `GenericMeasure` for a given numeric type */
@@ -226,10 +265,17 @@ export interface GenericMeasure<N, Basis, U extends Unit<Basis>, AllowedPrefixes
   gt(other: GenericMeasure<N, Basis, U, AllowedPrefixes>): boolean
 
   /**
+   * Formats a measure with a given value.
+   *
+   * Optionally takes a custom formatter. By default uses a symbol formatter.
+   */
+  format<R, O>(value: N, formatter?: MeasureFormatter<N, R, O>): O
+
+  /**
    * Formats the value and the unit.
    * @returns a string representation of measure
    */
-  toString(formatter?: MeasureFormatter<N>): string
+  // toString(formatter?: MeasureFormatter<N>): string
 
   /**
    * Formats this measure as a product of another unit. If the given unit has a symbol, this will format as a number
@@ -237,7 +283,7 @@ export interface GenericMeasure<N, Basis, U extends Unit<Basis>, AllowedPrefixes
    * @param a unit to be used to represent this measure
    * @returns a string representation of measure
    */
-  in(unit: GenericMeasure<N, Basis, U, AllowedPrefixes>, formatter?: MeasureFormatter<N>): string
+  // in(unit: GenericMeasure<N, Basis, U, AllowedPrefixes>, formatter?: MeasureFormatter<N>): string
 
   /**
    * Returns the value of this measure as a product of another unit. This can be used to quickly convert a measure to
@@ -245,7 +291,7 @@ export interface GenericMeasure<N, Basis, U extends Unit<Basis>, AllowedPrefixes
    * @param unit a measure of the same unit to convert this measure into
    * @returns the numeric value of this unit expressed in the given unit
    */
-  valueIn(unit: GenericMeasure<N, Basis, U, AllowedPrefixes>): N
+  // valueIn(unit: GenericMeasure<N, Basis, U, AllowedPrefixes>): N
 
   /**
    * Adds a symbol to this measure.
