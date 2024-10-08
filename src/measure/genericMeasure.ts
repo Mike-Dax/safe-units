@@ -43,16 +43,23 @@ export type MeasureOperation<N> =
       measure: GenericMeasure<N, any, any, any>
     }
 
-export interface MeasureFormatter<N, R, O> {
-  round: (value: N) => R
+export interface MeasureFormatter<R, PR, T, O, PO, RE, PA> {
   /** The value is provided to render the singular or plural names */
-  root: (value: N, ident: { symbol: string; nameSingular: string; namePlural: string }) => O
-  prefix: (measure: O, ident: { symbol: string; name: string; multiplier: N }) => O
-  times: (left: O, right: O) => O
-  over: (numerator: O, denominator: O) => O
-  pow: (measure: O, power: number) => O
-  reciprocal: (measure: O) => O
-  reduce: (rounded: R, unit: O) => O
+  root: (plural: boolean, ident: { symbol: string; nameSingular: string; namePlural: string }) => R
+  prefix: (inner: R | PR | T | O | PO | RE | PA, ident: { symbol: string; name: string }) => PR
+  times: (left: R | PR | T | O | PO | RE | PA, right: R | PR | T | O | PO | RE | PA) => T
+  over: (numerator: R | PR | T | O | PO | RE | PA, denominator: R | PR | T | O | PO | RE | PA) => O
+  pow: (inner: R | PR | T | O | PO | RE | PA, power: number) => PO
+  reciprocal: (inner: R | PR | T | O | PO | RE | PA) => RE
+  parentheses: (inner: R | PR | T | O | PO | RE | PA) => PA
+}
+
+/**
+ * Two stage rounding and formatting for values.
+ */
+export interface ValueFormatter<N, O> {
+  round: (value: N) => N
+  format: (rounded: N) => O
 }
 
 /** The set of numeric operations required to fully represent a `GenericMeasure` for a given numeric type */
@@ -101,6 +108,9 @@ export interface GenericMeasure<N, Basis, U extends Unit<Basis>, AllowedPrefixes
   readonly namePlural: string
   /** The symbol of the unit this measure represents (e.g. 0.3048 m = 1 ft) */
   readonly symbol: string
+
+  /** The operation this Measure represents in its syntax tree. For internal use. */
+  readonly operation: MeasureOperation<N>
 
   /**
    * Adds this measure to another measure with the same unit.
@@ -269,7 +279,10 @@ export interface GenericMeasure<N, Basis, U extends Unit<Basis>, AllowedPrefixes
    *
    * Optionally takes a custom formatter. By default uses a symbol formatter.
    */
-  format<R, O>(value: N, formatter?: MeasureFormatter<N, R, O>): O
+  format<C, R, PR, T, O, PO, RE, PA>(
+    plural: boolean,
+    formatter?: MeasureFormatter<R, PR, T, O, PO, RE, PA>,
+  ): R | PR | T | O | PO | RE | PA
 
   /**
    * Formats the value and the unit.

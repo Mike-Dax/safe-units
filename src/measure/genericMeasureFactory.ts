@@ -1,4 +1,4 @@
-import { GenericMeasure, MeasureFormatter, NumericOperations } from "./genericMeasure"
+import { GenericMeasure, MeasureFormatter, NumericOperations, ValueFormatter } from "./genericMeasure"
 import { createMeasureClass } from "./genericMeasureClass"
 import { GenericMeasureStatic, getGenericMeasureStaticMethods } from "./genericMeasureStatic"
 import { PrefixMask } from "./prefixMask"
@@ -62,24 +62,34 @@ interface GenericMeasureFactory<N> {
   /**
    * Configures and returns a string formatter.
    */
-  createFormatter(
+  createMeasureFormatter(options?: {
+    /**
+     * Whether to return a symbol, name or no text denoting the unit.
+     */
+    unitText?: "symbol" | "name"
+    /**
+     * The multiplication symbol to use, by default '×'.
+     */
+    multiplicationSymbol?: string
+    /**
+     * The fraction symbol to use, by default '⁄'.
+     */
+    fractionalSymbol?: string
+    /**
+     * The separator to use between strings, by default a space.
+     */
+    separatorSymbol?: string
+  }): MeasureFormatter<string, string, string, string, string, string, string>
+
+  /**
+   * Configures and returns a string formatter.
+   */
+  createValueFormatter(
     options?: {
-      /**
-       * Whether to return a symbol, name or no text denoting the unit.
-       */
-      unitText?: "symbol" | "name" | "none"
-      /**
-       * The times symbol to use, by default '*'.
-       */
-      timesSymbol?: string
-      /**
-       * The separator to use between strings, by default a space.
-       */
-      separatorSymbol?: string
       /**
        * How to display the value, by default full-precision.
        */
-      valueDisplay?: "full-precision" | "fixed-digits" | "significant-figures" | "exponential" | "to-nearest" | "none"
+      valueDisplay?: "full-precision" | "fixed-digits" | "significant-figures" | "exponential" | "to-nearest"
     } & (
       | {
           valueDisplay: "full-precision"
@@ -100,11 +110,8 @@ interface GenericMeasureFactory<N> {
           valueDisplay: "to-nearest"
           toNearest: N
         }
-      | {
-          valueDisplay?: "none"
-        }
     ),
-  ): MeasureFormatter<N, string>
+  ): ValueFormatter<N, string>
 }
 
 type GenericMeasureCommon<N> = GenericMeasureFactory<N> & GenericMeasureStatic<N>
@@ -152,30 +159,51 @@ export function createMeasureType<N, S extends {} = {}>(
         symbol,
         allowedPrefixes,
       ),
-    createFormatter: (options = {}) => {
+    createMeasureFormatter: (options = {}) => {
       const optionsWithDefaults = {
         unitText: "symbol",
-        timesSymbol: "*",
+        multiplicationSymbol: "×",
+        fractionalSymbol: "⁄",
         separatorSymbol: " ",
-        valueDisplay: "valueDisplay",
         ...options,
       }
 
-      const formatter: MeasureFormatter<N, string, string> = {
-        round: value => `${num.format(value)}`,
-        root: (value, { namePlural, nameSingular }) =>
-          num.compare(value, num.one()) === 0 ? nameSingular : namePlural,
-        prefix: (measure, { symbol }) => `${symbol}${measure}`,
-        times: (left, right) => `${left} * ${right}`,
-        over: (numerator, denominator) => `${numerator} / ${denominator}`,
-        pow: (measure, power) => `${measure}^${power}`,
-        reciprocal: measure => `1 / ${measure}`,
-        reduce: (rounded, unit) => `${rounded} ${unit}`,
+      const multiplicationSymbol = optionsWithDefaults.multiplicationSymbol
+      const fractionalSymbol = optionsWithDefaults.fractionalSymbol
+      const separatorSymbol = optionsWithDefaults.separatorSymbol
+
+      type Formatter = MeasureFormatter<string, string, string, string, string, string, string>
+
+      let root: Formatter["root"]
+      if (optionsWithDefaults.unitText === "symbol") {
+        root = (_plural, { symbol }) => symbol
+      } else {
+        root = (plural, { namePlural, nameSingular }) => (plural ? namePlural : nameSingular)
       }
 
-      optionsWithDefaults.unitText
-      optionsWithDefaults.timesSymbol
-      optionsWithDefaults.separatorSymbol
+      const formatter: MeasureFormatter<string, string, string, string, string, string, string> = {
+        root,
+        prefix: (inner, { symbol }) => `${symbol}${inner}`,
+        times: (left, right) => `${left}${separatorSymbol}${multiplicationSymbol}${separatorSymbol}${right}`,
+        over: (numerator, denominator) =>
+          `${numerator}${separatorSymbol}${fractionalSymbol}${separatorSymbol}${denominator}`,
+        pow: (inner, power) => `${inner}${createUnicodeSuperscript(power)}`,
+        reciprocal: inner => `1 / ${inner}`,
+        parentheses: inner => `(${inner})`,
+      }
+
+      return formatter
+    },
+    createValueFormatter: <N, O>(options = {}) => {
+      const optionsWithDefaults = {
+        valueDisplay: "full-precision",
+        ...options,
+      }
+
+      const formatter: ValueFormatter<N, O> = {
+        round: (value: N) => value,
+        format: (rounded: N) => rounded as any as O,
+      }
 
       switch (optionsWithDefaults.valueDisplay) {
         case "full-precision":
@@ -195,7 +223,7 @@ export function createMeasureType<N, S extends {} = {}>(
           break
       }
 
-      return {}
+      return formatter
     },
   }
 
@@ -203,4 +231,21 @@ export function createMeasureType<N, S extends {} = {}>(
     ...((staticMethods || {}) as any),
     ...common,
   }
+}
+
+const createUnicodeSuperscript = (number: number): string => {
+  const superscriptDigits = ["⁰", "¹", "²", "³", "⁴", "⁵", "⁶", "⁷", "⁸", "⁹"]
+  const numberString = Math.abs(number).toString()
+  let result = ""
+
+  for (let i = 0; i < numberString.length; i++) {
+    const digit = parseInt(numberString[i], 10)
+    result += superscriptDigits[digit]
+  }
+
+  if (number < 0) {
+    result = "⁻" + result
+  }
+
+  return result
 }

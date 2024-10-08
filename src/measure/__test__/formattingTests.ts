@@ -1,7 +1,3 @@
-import { createNameFormatter } from "../format"
-import { NumericOperations } from "../genericMeasure"
-import { createMeasureType } from "../genericMeasureFactory"
-import { wrapBinaryFn, wrapReducerFn, wrapSpreadFn, wrapUnaryFn } from "../genericMeasureUtils"
 import { Measure } from "../numberMeasure"
 import { UnitSystem } from "../unitSystem"
 
@@ -12,12 +8,12 @@ describe("Individual measure formatters", () => {
 
   const unitSystem = UnitSystem.from({
     length: "m",
-    mass: "kg",
+    mass: "g",
     time: "s",
   })
 
   const meters = Measure.dimension(unitSystem, "length", "meter", "meters", "m", ALLOW_SI_PREFIX)
-  const kilogram = Measure.dimension(unitSystem, "mass", "gram", "grams", "g", ALLOW_SI_PREFIX)
+  const gram = Measure.dimension(unitSystem, "mass", "gram", "grams", "g", ALLOW_SI_PREFIX)
   const feet = Measure.from(0.3048, meters, "foot", "feet", "ft")
   const inches = Measure.from(1 / 12, feet, "inch", "inches", "in")
 
@@ -25,26 +21,32 @@ describe("Individual measure formatters", () => {
   const minutes = Measure.from(60, seconds, "minute", "minutes", "m")
   const hours = Measure.from(60, minutes, "hour", "hours", "hr")
 
-  it("symbol formatter", () => {
-    const one = meters.format(1)
-    const two = meters.format(2)
-    console.log(one, two)
-  })
+  const corpus: { measure: Measure<any, any, any>; pluralName: string; singularName: string; symbol: string }[] = [
+    { measure: meters, pluralName: "meters", singularName: "meter", symbol: "m" },
+    {
+      measure: meters.pow(2).over(seconds.times(gram)),
+      pluralName: "meters² ⁄ (second × gram)",
+      singularName: "meter² ⁄ (second × gram)",
+      symbol: "m² ⁄ (s × g)",
+    },
+  ]
 
-  it("fully custom formatter", () => {
-    const one = meters.format(1, {
-      round: value => `${value.toFixed(3)}`,
-      root: (value, { symbol }) => symbol,
-      prefix: (measure, { name }) => `${name}${measure}`,
-      times: (left, right) => `${left} * ${right}`,
-      over: (numerator, denominator) => `${numerator} / ${denominator}`,
-      pow: (measure, power) => `${measure}^${power}`,
-      reciprocal: measure => `1 / ${measure}`,
-      reduce: (rounded, unit) => `${rounded}${unit}`,
+  for (const example of corpus) {
+    it(`it correctly handles naming and symbols for ${example.pluralName} `, () => {
+      const symbolFormatter = Measure.createMeasureFormatter({ unitText: "symbol" })
+      const symbolName = example.measure.format(false, symbolFormatter)
+
+      const nameFormatter = Measure.createMeasureFormatter({ unitText: "name" })
+      const pluralName = example.measure.format(true, nameFormatter)
+      const singularName = example.measure.format(false, nameFormatter)
+
+      console.log(`plural of ${example.pluralName}
+        symbolName: ${symbolName}
+        pluralName: ${pluralName}
+        singularName: ${singularName}
+        `)
     })
-
-    console.log(one)
-  })
+  }
 })
 
 describe("Complex Formatting helpers", () => {

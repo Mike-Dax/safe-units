@@ -1,4 +1,3 @@
-import { createNameFormatter, createSymbolFormatter } from "./format"
 import { GenericMeasure, MeasureFormatter, NumericOperations, MeasureOperation } from "./genericMeasure"
 import { IdentityMask, MarkMaskAsUsed, NO_PREFIX_ALLOWED, PrefixMask } from "./prefixMask"
 import { UnitSystem } from "./unitSystem"
@@ -28,14 +27,10 @@ interface GenericMeasureClass<N> {
 // how can we hide the implementation details of depth from the user?
 
 export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasureClass<N> {
-  function getFormatter<R, O>(formatter: MeasureFormatter<N, R, O> | undefined): MeasureFormatter<N, R, O> {
-    return formatter ?? (createNameFormatter(num) as any)
-  }
-
   class Measure<Basis, U extends Unit<Basis>, AllowedPrefixes extends PrefixMask>
     implements GenericMeasure<N, Basis, U, AllowedPrefixes>
   {
-    private operation: MeasureOperation<N>
+    public readonly operation: MeasureOperation<N>
 
     constructor(
       public readonly value: N,
@@ -128,6 +123,8 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
     public times<V extends Unit<Basis>>(
       other: GenericMeasure<N, Basis, V, AllowedPrefixes>,
     ): GenericMeasure<N, Basis, MultiplyUnits<Basis, U, V>, AllowedPrefixes> {
+      // TODO: Disallow prefixing
+
       return new Measure(
         num.mult(this.value, other.value),
         this.unitSystem.multiply(this.unit, other.unit),
@@ -143,6 +140,8 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
     public over<V extends Unit<Basis>>(
       other: GenericMeasure<N, Basis, V, AllowedPrefixes>,
     ): GenericMeasure<N, Basis, DivideUnits<Basis, U, V>, AllowedPrefixes> {
+      // TODO: Disallow prefixing
+
       return new Measure(
         num.div(this.value, other.value),
         this.unitSystem.divide(this.unit, other.unit),
@@ -158,6 +157,8 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
     public pow<Power extends number>(
       power: Power,
     ): GenericMeasure<N, Basis, UnitToPower<Basis, U, Power>, AllowedPrefixes> {
+      // TODO: Collapse history of repeated pow calls
+
       return new Measure(
         num.pow(this.value, power),
         this.unitSystem.pow(this.unit, power),
@@ -274,38 +275,66 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
     }
 
     // Formatting
-    private innerFormat<O>(value: N, formatter: MeasureFormatter<N, O>) {
-      switch (this.operation.type) {
+    private innerFormat<C, R, PR, T, O, PO, RE, PA>(
+      plural: boolean,
+      measure: Measure<Basis, U, AllowedPrefixes>,
+      formatter: MeasureFormatter<R, PR, T, O, PO, RE, PA>,
+    ) {
+      switch (measure.operation.type) {
         case "prefix":
-          return formatter.prefix(this.operation.measure.format(value, formatter), this.operation)
+          if (
+            measure.operation.measure.operation.type !== "root" &&
+            measure.operation.measure.operation.type !== "pow"
+          ) {
+            throw new Error(`A non-root/pow operation was prefixed. This should be disallowed`)
+          }
+
+          return formatter.prefix(measure.operation.measure.format(plural, formatter), measure.operation)
         case "times":
           return formatter.times(
-            this.operation.left.format(value, formatter),
-            this.operation.right.format(value, formatter),
+            measure.operation.left.format(plural, formatter),
+            measure.operation.right.format(plural, formatter),
           )
-        case "over":
-          return formatter.over(
-            this.operation.left.format(value, formatter),
-            this.operation.right.format(value, formatter),
-          )
-        case "pow":
-          return formatter.pow(this.operation.measure.format(value, formatter), this.operation.power)
+        case "over": {
+          // The numerator is rendered as is.
+          const numerator = measure.operation.left.format(plural, formatter)
+
+          // The denominator is not pluralised.
+          let denominator = measure.operation.right.format(false, formatter)
+
+          // If the denominator operation is `times`, wrap the output in parentheses.
+          if (measure.operation.right.operation.type === "times") {
+            denominator = formatter.parentheses(denominator)
+          }
+
+          return formatter.over(numerator, denominator)
+        }
+        case "pow": {
+          let inner = measure.operation.measure.format(plural, formatter)
+
+          // If the inner operation is `times`, wrap the output in parentheses.
+          if (measure.operation.measure.operation.type === "times") {
+            inner = formatter.parentheses(inner)
+          }
+
+          return formatter.pow(inner, measure.operation.power)
+        }
+
         case "reciprocal":
-          return formatter.reciprocal(this.operation.measure.format(value, formatter))
+          return formatter.reciprocal(measure.operation.measure.format(plural, formatter))
         case "root":
-          return formatter.root(value, this)
+          return formatter.root(plural, measure)
 
         default:
           throw new Error(`unimplemented operation`)
       }
     }
 
-    public format<O>(value: N, formatter?: MeasureFormatter<N, O>) {
-      const f = getFormatter(formatter)
-
-      const rounded = f.round(value)
-
-      return f.reduce(rounded, this.innerFormat(value, f))
+    public format<C, R, PR, T, O, PO, RE, PA>(
+      plural: boolean = false,
+      formatter: MeasureFormatter<R, PR, T, O, PO, RE, PA>,
+    ) {
+      return this.innerFormat(plural, this, formatter)
     }
 
     // public toString(formatter?: MeasureFormatter<N>): string {
