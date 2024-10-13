@@ -1,4 +1,10 @@
-import { GenericMeasure, MeasureFormatter, NumericOperations, MeasureOperation } from "./genericMeasure"
+import {
+  GenericMeasure,
+  MeasureFormatter,
+  NumericOperations,
+  MeasureOperation,
+  ValueFormatOptions,
+} from "./genericMeasure"
 import { IdentityMask, MarkMaskAsUsed, NO_PREFIX_ALLOWED, PrefixMask } from "./prefixMask"
 import { UnitSystem } from "./unitSystem"
 import {
@@ -275,85 +281,53 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
     }
 
     // Formatting
-    private innerFormat<C, R, PR, T, O, PO, RE, PA>(
-      plural: boolean,
-      measure: Measure<Basis, U, AllowedPrefixes>,
-      formatter: MeasureFormatter<R, PR, T, O, PO, RE, PA>,
-    ) {
-      switch (measure.operation.type) {
+    public format<R, PR, T, O, PO, RE, PA>(plural: boolean, formatter: MeasureFormatter<R, PR, T, O, PO, RE, PA>) {
+      switch (this.operation.type) {
         case "prefix":
-          if (
-            measure.operation.measure.operation.type !== "root" &&
-            measure.operation.measure.operation.type !== "pow"
-          ) {
+          if (this.operation.measure.operation.type !== "root" && this.operation.measure.operation.type !== "pow") {
             throw new Error(`A non-root/pow operation was prefixed. This should be disallowed`)
           }
 
-          return formatter.prefix(measure.operation.measure.format(plural, formatter), measure.operation)
+          return formatter.prefix(this.operation.measure.format(plural, formatter), this.operation)
         case "times":
           return formatter.times(
-            measure.operation.left.format(plural, formatter),
-            measure.operation.right.format(plural, formatter),
+            this.operation.left.format(plural, formatter),
+            this.operation.right.format(plural, formatter),
           )
         case "over": {
           // The numerator is rendered as is.
-          const numerator = measure.operation.left.format(plural, formatter)
+          const numerator = this.operation.left.format(plural, formatter)
 
           // The denominator is not pluralised.
-          let denominator = measure.operation.right.format(false, formatter)
+          let denominator = this.operation.right.format(false, formatter)
 
           // If the denominator operation is `times`, wrap the output in parentheses.
-          if (measure.operation.right.operation.type === "times") {
+          if (this.operation.right.operation.type === "times") {
             denominator = formatter.parentheses(denominator)
           }
 
           return formatter.over(numerator, denominator)
         }
         case "pow": {
-          let inner = measure.operation.measure.format(plural, formatter)
+          let inner = this.operation.measure.format(plural, formatter)
 
           // If the inner operation is `times`, wrap the output in parentheses.
-          if (measure.operation.measure.operation.type === "times") {
+          if (this.operation.measure.operation.type === "times") {
             inner = formatter.parentheses(inner)
           }
 
-          return formatter.pow(inner, measure.operation.power)
+          return formatter.pow(inner, this.operation.power)
         }
 
         case "reciprocal":
-          return formatter.reciprocal(measure.operation.measure.format(plural, formatter))
+          return formatter.reciprocal(this.operation.measure.format(plural, formatter))
         case "root":
-          return formatter.root(plural, measure)
+          return formatter.root(plural, this)
 
         default:
           throw new Error(`unimplemented operation`)
       }
     }
-
-    public format<C, R, PR, T, O, PO, RE, PA>(
-      plural: boolean = false,
-      formatter: MeasureFormatter<R, PR, T, O, PO, RE, PA>,
-    ) {
-      return this.innerFormat(plural, this, formatter)
-    }
-
-    // public toString(formatter?: MeasureFormatter<N>): string {
-    //   const { formatValue, formatUnit } = getFormatter(formatter)
-    //   return `${formatValue(this.value)} ${formatUnit(this.unit, this.unitSystem)}`.trimRight()
-    // }
-
-    // public in(unit: GenericMeasure<N, Basis, U, AllowedPrefixes>, formatter?: MeasureFormatter<N>): string {
-    //   if (unit.symbol === undefined) {
-    //     return this.toString(formatter)
-    //   }
-    //   const { formatValue } = getFormatter(formatter)
-    //   const value = formatValue(num.div(this.value, unit.value))
-    //   return `${value} ${unit.symbol}`
-    // }
-
-    // public valueIn(unit: GenericMeasure<N, Basis, U, AllowedPrefixes>): N {
-    //   return num.div(this.value, unit.value)
-    // }
 
     public createConverterTo(unit: GenericMeasure<N, Basis, U, AllowedPrefixes>) {
       // This should all get inlined
@@ -365,64 +339,88 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
       }
     }
 
-    public createToNearestConverter(value: N, unit: GenericMeasure<N, Basis, U, AllowedPrefixes>) {
-      // This should all get inlined
-      const factor = num.div(this.value, unit.value)
-      const multFn = num.mult
-      const roundFn = num.round
-      const divideFn = num.div
-      const nearest = value
-
-      // console.log(
-      //   `converting ${value} from ${this.namePlural} to the nearest ${nearest} ${unit.namePlural}. Unrounded ${unrounded} ${unit.symbol}, rounded: ${rounded} ${unit.symbol}`,
-      // )
-
-      return (value: N): N => {
-        const unrounded = multFn(factor, value)
-        const rounded = multFn(roundFn(divideFn(unrounded, nearest)), nearest)
-        return rounded
-      }
-    }
-
-    public createNameFormatter() {
-      // This should all get inlined
-      const single = num.one()
-      const match = num.compare
-
-      return (value: N): string => {
-        if (match(value, single) === 0) {
-          return this.nameSingular
-        } else {
-          return this.namePlural
+    public createValueFormatter(options: ValueFormatOptions<N>) {
+      switch (options.valueDisplay) {
+        case "full-precision":
+          return (value: N) => num.format(value)
+        case "fixed-digits": {
+          const digits = options.digits
+          return (value: N) => num.toFixed(value, digits)
         }
+        case "significant-figures": {
+          const significantFigures = options.significantFigures
+          return (value: N) => num.toPrecision(value, significantFigures)
+        }
+        case "exponential": {
+          const fractionDigits = options.fractionDigits
+          return (value: N) => num.toExponential(value, fractionDigits)
+        }
+        case "nearest": {
+          const multFn = num.mult
+          const roundFn = num.round
+          const divideFn = num.div
+          const nearest = options.value
+
+          return (value: N) => {
+            const rounded = multFn(roundFn(divideFn(value, nearest)), nearest)
+
+            return num.format(rounded)
+          }
+        }
+
+        default:
+          throw new Error(`Value passed to valueDisplay is incorrect.`)
       }
     }
 
-    public createDynamicFormatter(
+    // public createToNearestConverter(value: N, unit: GenericMeasure<N, Basis, U, AllowedPrefixes>) {
+    //   // This should all get inlined
+    //   const factor = num.div(this.value, unit.value)
+    //   const multFn = num.mult
+    //   const roundFn = num.round
+    //   const divideFn = num.div
+    //   const nearest = value
+
+    //   // console.log(
+    //   //   `converting ${value} from ${this.namePlural} to the nearest ${nearest} ${unit.namePlural}. Unrounded ${unrounded} ${unit.symbol}, rounded: ${rounded} ${unit.symbol}`,
+    //   // )
+
+    //   return (value: N): N => {
+    //     const unrounded = multFn(factor, value)
+    //     const rounded = multFn(roundFn(divideFn(unrounded, nearest)), nearest)
+    //     return rounded
+    //   }
+    // }
+
+    public createDynamicFormatter<R, PR, T, O, PO, RE, PA>(
       measures: GenericMeasure<N, Basis, U, AllowedPrefixes>[],
-      toNearest?: N,
-      text: "symbol" | "name" = "symbol",
+      valueFormat: ValueFormatOptions<N>,
+      measureFormatter: MeasureFormatter<R, PR, T, O, PO, RE, PA>,
     ): (value: N) => {
-      value: N
-      text: string
-      converter: (value: N) => N
+      converted: N
+      formatted: string
+      measure: R | PR | T | O | PO | RE | PA
     } {
       // Sort measures by value from largest to smallest
       const sortedMeasures = [...measures].sort((a, b) => num.compare(b.value, a.value))
 
-      const shouldUseToNearest = Boolean(toNearest && num.compare(toNearest, num.zero()) !== 0)
-
       // Create converters for each measure
-      const converters = sortedMeasures.map(measure =>
-        shouldUseToNearest ? this.createToNearestConverter(toNearest!, measure) : this.createConverterTo(measure),
-      )
+      const converters = sortedMeasures.map(measure => this.createConverterTo(measure))
 
       const one = num.one()
 
-      const textIsSymbol = text === "symbol"
-      const textGetter = sortedMeasures.map(measure =>
-        textIsSymbol ? (_value: N) => measure.getSymbol() : measure.createNameFormatter(),
-      )
+      const measureFormatterArr = sortedMeasures.map(measure => {
+        const plural = measure.format(true, measureFormatter)
+        const singular = measure.format(false, measureFormatter)
+
+        return (value: N) => {
+          const isSingular = num.compare(value, one) === 0
+
+          return isSingular ? singular : plural
+        }
+      })
+
+      const valueFormatterArr = sortedMeasures.map(measure => measure.createValueFormatter(valueFormat))
 
       return (value: N) => {
         for (let i = 0; i < sortedMeasures.length; i++) {
@@ -430,31 +428,33 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
 
           if (num.compare(convertedValue, one) >= 0) {
             return {
-              value: convertedValue,
-              text: textGetter[i](convertedValue),
-              converter: converters[i],
+              converted: convertedValue,
+              formatted: valueFormatterArr[i](convertedValue),
+              measure: measureFormatterArr[i](convertedValue),
             }
           }
         }
 
         // If no suitable measure is found, return the last (smallest) measure
         const lastIndex = sortedMeasures.length - 1
+        const convertedValue = converters[lastIndex](value)
         return {
-          value: converters[lastIndex](value),
-          text: textGetter[lastIndex](value),
-          converter: converters[lastIndex],
+          converted: convertedValue,
+          formatted: valueFormatterArr[lastIndex](convertedValue),
+          measure: measureFormatterArr[lastIndex](convertedValue),
         }
       }
     }
 
-    public createMultiUnitFormatter(
+    public createMultiUnitFormatter<R, PR, T, O, PO, RE, PA>(
       measures: GenericMeasure<N, Basis, U, AllowedPrefixes>[],
-      toNearest?: N,
-      text: "symbol" | "name" = "symbol",
+      valueFormat: ValueFormatOptions<N>,
+      measureFormatter: MeasureFormatter<R, PR, T, O, PO, RE, PA>,
       keepZeros: boolean = false,
     ): (value: N) => {
-      value: N
-      text: string
+      converted: N
+      formatted: string
+      measure: R | PR | T | O | PO | RE | PA
     }[] {
       if (measures.length === 0) {
         throw new Error(`must have at least one Measure`)
@@ -463,36 +463,47 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
       // Sort measures by value from largest to smallest
       const sortedMeasures = [...measures].sort((a, b) => num.compare(b.value, a.value))
 
-      const shouldUseToNearest = Boolean(toNearest && num.compare(toNearest, num.zero()) !== 0)
-
-      // Create converters for each measure from this Measure to the other one
-      const converters = sortedMeasures.map((measure, index) =>
-        index === sortedMeasures.length - 1 && shouldUseToNearest
-          ? this.createToNearestConverter(toNearest!, measure)
-          : this.createConverterTo(measure),
-      )
+      // Create converters for each measure
+      const converters = sortedMeasures.map(measure => this.createConverterTo(measure))
 
       // Create converters back the other way
       const reverseConverter = sortedMeasures.map(measure => measure.createConverterTo(this))
 
-      const textIsSymbol = text === "symbol"
-      const textGetters = sortedMeasures.map(measure =>
-        textIsSymbol ? (_value: N) => measure.getSymbol() : measure.createNameFormatter(),
+      const measureFormatterArr = sortedMeasures.map(measure => {
+        const plural = measure.format(true, measureFormatter)
+        const singular = measure.format(false, measureFormatter)
+
+        return (value: N) => {
+          const isSingular = num.compare(value, one) === 0
+
+          return isSingular ? singular : plural
+        }
+      })
+
+      const one = num.one()
+      const zero = num.zero()
+
+      const valueFormatterArr = sortedMeasures.map((measure, index) =>
+        index < sortedMeasures.length - 1
+          ? measure.createValueFormatter({ value: one, valueDisplay: "nearest" })
+          : measure.createValueFormatter(valueFormat),
       )
 
       // if there's only one sortedMeasure, just do the direct conversion
       if (sortedMeasures.length === 1) {
         return (value: N) => {
+          const convertedValue = converters[0](value)
+          const f = valueFormatterArr[0]
+          const m = measureFormatterArr[0]
           return [
             {
-              value: converters[0](value),
-              text: textGetters[0](value),
+              converted: convertedValue,
+              formatted: f(convertedValue),
+              measure: m(convertedValue),
             },
           ]
         }
       }
-
-      const one = num.one()
 
       return (value: N) => {
         let multiplier = one
@@ -503,23 +514,26 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
 
         let bucket = num.abs(value)
 
-        const result: { value: N; text: string }[] = []
+        const result: { converted: N; formatted: string; measure: R | PR | T | O | PO | RE | PA }[] = []
 
         for (let i = 0; i < sortedMeasures.length - 1; i++) {
           const convertedValue = converters[i](bucket)
           const flooredValue = num.floor(convertedValue)
 
           if (num.compare(convertedValue, num.one()) >= 0) {
+            const postMult = num.mult(flooredValue, multiplier)
             result.push({
-              value: num.mult(flooredValue, multiplier),
-              text: textGetters[i](flooredValue),
+              converted: postMult,
+              formatted: valueFormatterArr[i](postMult),
+              measure: measureFormatterArr[i](postMult),
             })
             multiplier = one
             bucket = num.sub(bucket, reverseConverter[i](flooredValue))
           } else if (keepZeros) {
             result.push({
-              value: num.zero(),
-              text: textGetters[i](num.zero()),
+              converted: zero,
+              formatted: valueFormatterArr[i](zero),
+              measure: measureFormatterArr[i](zero),
             })
           }
         }
@@ -529,18 +543,17 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
         const lastConvertedValue = converters[lastIndex](bucket)
 
         if (num.compare(lastConvertedValue, num.zero()) > 0 || result.length === 0) {
+          const postMult = num.mult(lastConvertedValue, multiplier)
+
           result.push({
-            value: num.mult(lastConvertedValue, multiplier),
-            text: textGetters[lastIndex](lastConvertedValue),
+            converted: postMult,
+            formatted: valueFormatterArr[lastIndex](postMult),
+            measure: measureFormatterArr[lastIndex](postMult),
           })
         }
 
         return result
       }
-    }
-
-    public getSymbol() {
-      return this.symbol
     }
   }
 

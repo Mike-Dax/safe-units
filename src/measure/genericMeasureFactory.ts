@@ -1,4 +1,4 @@
-import { GenericMeasure, MeasureFormatter, NumericOperations, ValueFormatter } from "./genericMeasure"
+import { GenericMeasure, MeasureFormatter, NumericOperations } from "./genericMeasure"
 import { createMeasureClass } from "./genericMeasureClass"
 import { GenericMeasureStatic, getGenericMeasureStaticMethods } from "./genericMeasureStatic"
 import { PrefixMask } from "./prefixMask"
@@ -70,48 +70,20 @@ interface GenericMeasureFactory<N> {
     /**
      * The multiplication symbol to use, by default '×'.
      */
-    multiplicationSymbol?: string
+    times?: string
     /**
      * The fraction symbol to use, by default '⁄'.
      */
-    fractionalSymbol?: string
+    per?: string
     /**
-     * The separator to use between strings, by default a space.
+     * Whether to display values to the power of a number as superscript symbols or as their names.
      */
-    separatorSymbol?: string
+    pow?: "symbol" | "name"
+    /**
+     * Whether to use parentheses.
+     */
+    parentheses?: boolean
   }): MeasureFormatter<string, string, string, string, string, string, string>
-
-  /**
-   * Configures and returns a string formatter.
-   */
-  createValueFormatter(
-    options?: {
-      /**
-       * How to display the value, by default full-precision.
-       */
-      valueDisplay?: "full-precision" | "fixed-digits" | "significant-figures" | "exponential" | "to-nearest"
-    } & (
-      | {
-          valueDisplay: "full-precision"
-        }
-      | {
-          valueDisplay: "fixed-digits"
-          digits: number
-        }
-      | {
-          valueDisplay: "significant-figures"
-          significantFigures: number
-        }
-      | {
-          valueDisplay: "exponential"
-          fractionDigits: number
-        }
-      | {
-          valueDisplay: "to-nearest"
-          toNearest: N
-        }
-    ),
-  ): ValueFormatter<N, string>
 }
 
 type GenericMeasureCommon<N> = GenericMeasureFactory<N> & GenericMeasureStatic<N>
@@ -162,65 +134,49 @@ export function createMeasureType<N, S extends {} = {}>(
     createMeasureFormatter: (options = {}) => {
       const optionsWithDefaults = {
         unitText: "symbol",
-        multiplicationSymbol: "×",
-        fractionalSymbol: "⁄",
-        separatorSymbol: " ",
+        times: "·",
+        per: "/",
+        pow: "symbol",
         ...options,
       }
 
-      const multiplicationSymbol = optionsWithDefaults.multiplicationSymbol
-      const fractionalSymbol = optionsWithDefaults.fractionalSymbol
-      const separatorSymbol = optionsWithDefaults.separatorSymbol
+      const multiplicationSymbol = optionsWithDefaults.times
+      const fractionalSymbol = optionsWithDefaults.per
 
       type Formatter = MeasureFormatter<string, string, string, string, string, string, string>
 
       let root: Formatter["root"]
-      if (optionsWithDefaults.unitText === "symbol") {
-        root = (_plural, { symbol }) => symbol
-      } else {
+      let prefix: Formatter["prefix"]
+      if (optionsWithDefaults.unitText === "name") {
         root = (plural, { namePlural, nameSingular }) => (plural ? namePlural : nameSingular)
+        prefix = (inner, { name }) => `${name}${inner}`
+      } else {
+        root = (_plural, { symbol }) => symbol
+        prefix = (inner, { symbol }) => `${symbol}${inner}`
+      }
+
+      let pow: Formatter["pow"]
+      if (optionsWithDefaults.pow === "name") {
+        pow = (inner, power) => `${inner}${createPowerDescription(power)}`
+      } else {
+        pow = (inner, power) => `${inner}${createUnicodeSuperscript(power)}`
+      }
+
+      let parentheses: Formatter["parentheses"]
+      if (!optionsWithDefaults.parentheses === false) {
+        parentheses = inner => inner
+      } else {
+        parentheses = inner => `(${inner})`
       }
 
       const formatter: MeasureFormatter<string, string, string, string, string, string, string> = {
         root,
-        prefix: (inner, { symbol }) => `${symbol}${inner}`,
-        times: (left, right) => `${left}${separatorSymbol}${multiplicationSymbol}${separatorSymbol}${right}`,
-        over: (numerator, denominator) =>
-          `${numerator}${separatorSymbol}${fractionalSymbol}${separatorSymbol}${denominator}`,
-        pow: (inner, power) => `${inner}${createUnicodeSuperscript(power)}`,
+        prefix,
+        times: (left, right) => `${left}${multiplicationSymbol}${right}`,
+        over: (numerator, denominator) => `${numerator}${fractionalSymbol}${denominator}`,
+        pow,
         reciprocal: inner => `1 / ${inner}`,
-        parentheses: inner => `(${inner})`,
-      }
-
-      return formatter
-    },
-    createValueFormatter: <N, O>(options = {}) => {
-      const optionsWithDefaults = {
-        valueDisplay: "full-precision",
-        ...options,
-      }
-
-      const formatter: ValueFormatter<N, O> = {
-        round: (value: N) => value,
-        format: (rounded: N) => rounded as any as O,
-      }
-
-      switch (optionsWithDefaults.valueDisplay) {
-        case "full-precision":
-          break
-        case "fixed-digits":
-          break
-        case "significant-figures":
-          break
-        case "exponential":
-          break
-        case "to-nearest":
-          break
-        case "none":
-          break
-
-        default:
-          break
+        parentheses,
       }
 
       return formatter
@@ -233,7 +189,11 @@ export function createMeasureType<N, S extends {} = {}>(
   }
 }
 
-const createUnicodeSuperscript = (number: number): string => {
+function createUnicodeSuperscript(number: number): string {
+  if (number === 1) {
+    return ""
+  }
+
   const superscriptDigits = ["⁰", "¹", "²", "³", "⁴", "⁵", "⁶", "⁷", "⁸", "⁹"]
   const numberString = Math.abs(number).toString()
   let result = ""
@@ -248,4 +208,29 @@ const createUnicodeSuperscript = (number: number): string => {
   }
 
   return result
+}
+
+function createPowerDescription(power: number): string {
+  switch (power) {
+    case 1:
+      return ""
+    case 2:
+      return " squared"
+    case 3:
+      return " cubed"
+    case 4:
+      return " to the fourth"
+    case 5:
+      return " to the fifth"
+    case 6:
+      return " to the sixth"
+    case 7:
+      return " to the seventh"
+    case 8:
+      return " to the eighth"
+    case 9:
+      return " to the ninth"
+    default:
+      return ` to the ${power}`
+  }
 }

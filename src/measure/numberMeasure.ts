@@ -38,7 +38,10 @@ const numericOps: NumericOperations<number> = {
   round: x => Math.round(x),
   floor: x => Math.floor(x),
   compare: (x, y) => x - y,
-  format: x => `${x}`,
+  format: x => String(x),
+  toFixed: (x, fractionDigits) => x.toFixed(fractionDigits),
+  toPrecision: (x, precision) => x.toPrecision(precision),
+  toExponential: (x, fractionDigits) => x.toExponential(fractionDigits),
 }
 
 export type Measure<Basis, U extends Unit<Basis>, AllowedPrefixes extends PrefixMask> = GenericMeasure<

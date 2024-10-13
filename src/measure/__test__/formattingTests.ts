@@ -12,6 +12,8 @@ describe("Individual measure formatters", () => {
     time: "s",
   })
 
+  const milli = Measure.prefix("milli", "m", 1e-3, ALLOW_SI_PREFIX)
+
   const meters = Measure.dimension(unitSystem, "length", "meter", "meters", "m", ALLOW_SI_PREFIX)
   const gram = Measure.dimension(unitSystem, "mass", "gram", "grams", "g", ALLOW_SI_PREFIX)
   const feet = Measure.from(0.3048, meters, "foot", "feet", "ft")
@@ -21,30 +23,56 @@ describe("Individual measure formatters", () => {
   const minutes = Measure.from(60, seconds, "minute", "minutes", "m")
   const hours = Measure.from(60, minutes, "hour", "hours", "hr")
 
-  const corpus: { measure: Measure<any, any, any>; pluralName: string; singularName: string; symbol: string }[] = [
-    { measure: meters, pluralName: "meters", singularName: "meter", symbol: "m" },
+  const corpus: {
+    measure: Measure<any, any, any>
+    pluralName: string
+    singularName: string
+    symbol: string
+  }[] = [
     {
-      measure: meters.pow(2).over(seconds.times(gram)),
-      pluralName: "meters² ⁄ (second × gram)",
-      singularName: "meter² ⁄ (second × gram)",
-      symbol: "m² ⁄ (s × g)",
+      measure: meters, // simple
+      pluralName: "meters",
+      singularName: "meter",
+      symbol: "m",
+    },
+    {
+      measure: milli(meters), // prefix handling
+      pluralName: "millimeters",
+      singularName: "millimeter",
+      symbol: "mm",
+    },
+    {
+      measure: meters.pow(2).over(gram.times(seconds)),
+      pluralName: "meters squared per (gram second)", // gram second vs second gram is interesting?
+      singularName: "meter squared per (gram second)",
+      symbol: "m²/(g·s)",
+    },
+    {
+      measure: meters.pow(1).over(seconds.pow(6)),
+      pluralName: "meters per second to the sixth",
+      singularName: "meter per second to the sixth",
+      symbol: "m/s⁶", // to the 1 is dropped to nothing
     },
   ]
 
   for (const example of corpus) {
-    it(`it correctly handles naming and symbols for ${example.pluralName} `, () => {
-      const symbolFormatter = Measure.createMeasureFormatter({ unitText: "symbol" })
+    it(`it correctly handles naming and symbols for ${example.pluralName}`, () => {
+      const symbolFormatter = Measure.createMeasureFormatter()
       const symbolName = example.measure.format(false, symbolFormatter)
 
-      const nameFormatter = Measure.createMeasureFormatter({ unitText: "name" })
+      const nameFormatter = Measure.createMeasureFormatter({
+        unitText: "name",
+        times: " ",
+        per: " per ",
+        pow: "name",
+        parentheses: false,
+      })
       const pluralName = example.measure.format(true, nameFormatter)
       const singularName = example.measure.format(false, nameFormatter)
 
-      console.log(`plural of ${example.pluralName}
-        symbolName: ${symbolName}
-        pluralName: ${pluralName}
-        singularName: ${singularName}
-        `)
+      expect(symbolName).toBe(example.symbol)
+      expect(pluralName).toBe(example.pluralName)
+      expect(singularName).toBe(example.singularName)
     })
   }
 })
@@ -68,25 +96,6 @@ describe("Complex Formatting helpers", () => {
   const seconds = Measure.dimension(unitSystem, "time", "second", "seconds", "s")
   const minutes = Measure.from(60, seconds, "minute", "minutes", "m")
   const hours = Measure.from(60, minutes, "hour", "hours", "hr")
-
-  it("symbol getter", () => {
-    const symbol = meters.getSymbol()
-    expect(symbol).toEqual("m")
-  })
-
-  it("singular and plural names", () => {
-    const nameFormatter = meters.createNameFormatter()
-
-    const one = nameFormatter(1)
-    const zero = nameFormatter(0)
-    const negOne = nameFormatter(-1)
-    const two = nameFormatter(2)
-
-    expect(one).toEqual("meter")
-    expect(zero).toEqual("meters")
-    expect(negOne).toEqual("meters")
-    expect(two).toEqual("meters")
-  })
 
   it("meters to feet conversion", () => {
     const metersToFeet = meters.createConverterTo(feet)
@@ -117,43 +126,45 @@ describe("Complex Formatting helpers", () => {
   })
 
   it("meters to nearest 1 foot conversion", () => {
-    const metersToNearestOneFoot = meters.createToNearestConverter(1, feet)
+    const metersToNearestOneFoot = meters.createConverterTo(feet)
+    const valueFormatter = feet.createValueFormatter({ valueDisplay: "nearest", value: 1 })
 
-    const one = metersToNearestOneFoot(1)
-    const zero = metersToNearestOneFoot(0)
-    const negOne = metersToNearestOneFoot(-1)
-    const two = metersToNearestOneFoot(2)
+    const one = valueFormatter(metersToNearestOneFoot(1))
+    const zero = valueFormatter(metersToNearestOneFoot(0))
+    const negOne = valueFormatter(metersToNearestOneFoot(-1))
+    const two = valueFormatter(metersToNearestOneFoot(2))
 
-    expect(one).toBeCloseTo(3)
-    expect(zero).toBeCloseTo(0)
-    expect(negOne).toBeCloseTo(-3)
-    expect(two).toBeCloseTo(7)
+    expect(one).toBe("3")
+    expect(zero).toBe("0")
+    expect(negOne).toBe("-3")
+    expect(two).toBe("7")
   })
 
   it("meters to nearest 0.25 feet conversion", () => {
-    const metersToNearestOneFoot = meters.createToNearestConverter(0.25, feet)
+    const metersToNearestOneFoot = meters.createConverterTo(feet)
+    const valueFormatter = feet.createValueFormatter({ valueDisplay: "nearest", value: 0.25 })
 
-    const one = metersToNearestOneFoot(1)
-    const onePointOne = metersToNearestOneFoot(1.1)
-    const onePointTwo = metersToNearestOneFoot(1.2)
-    const onePointThree = metersToNearestOneFoot(1.3)
-    const onePointFour = metersToNearestOneFoot(1.4)
-    const onePointFive = metersToNearestOneFoot(1.5)
-    const onePointSevenFive = metersToNearestOneFoot(1.75)
-    const zero = metersToNearestOneFoot(0)
-    const negOne = metersToNearestOneFoot(-1)
-    const two = metersToNearestOneFoot(2)
+    const one = valueFormatter(metersToNearestOneFoot(1))
+    const onePointOne = valueFormatter(metersToNearestOneFoot(1.1))
+    const onePointTwo = valueFormatter(metersToNearestOneFoot(1.2))
+    const onePointThree = valueFormatter(metersToNearestOneFoot(1.3))
+    const onePointFour = valueFormatter(metersToNearestOneFoot(1.4))
+    const onePointFive = valueFormatter(metersToNearestOneFoot(1.5))
+    const onePointSevenFive = valueFormatter(metersToNearestOneFoot(1.75))
+    const zero = valueFormatter(metersToNearestOneFoot(0))
+    const negOne = valueFormatter(metersToNearestOneFoot(-1))
+    const two = valueFormatter(metersToNearestOneFoot(2))
 
-    expect(one).toBeCloseTo(3.25)
-    expect(onePointOne).toBeCloseTo(3.5)
-    expect(onePointTwo).toBeCloseTo(4)
-    expect(onePointThree).toBeCloseTo(4.25)
-    expect(onePointFour).toBeCloseTo(4.5)
-    expect(onePointFive).toBeCloseTo(5)
-    expect(onePointSevenFive).toBeCloseTo(5.75)
-    expect(zero).toBeCloseTo(0)
-    expect(negOne).toBeCloseTo(-3.25)
-    expect(two).toBeCloseTo(6.5)
+    expect(one).toBe("3.25")
+    expect(onePointOne).toBe("3.5")
+    expect(onePointTwo).toBe("4")
+    expect(onePointThree).toBe("4.25")
+    expect(onePointFour).toBe("4.5")
+    expect(onePointFive).toBe("5")
+    expect(onePointSevenFive).toBe("5.75")
+    expect(zero).toBe("0")
+    expect(negOne).toBe("-3.25")
+    expect(two).toBe("6.5")
   })
 
   it("auto-prefixing formatter for meters", () => {
@@ -162,13 +173,17 @@ describe("Complex Formatting helpers", () => {
     const milli = Measure.prefix("milli", "m", 1e-3, ALLOW_SI_PREFIX)
     const micro = Measure.prefix("micro", "µ", 1e-6, ALLOW_SI_PREFIX)
 
-    const autoPrefixer = meters.createDynamicFormatter([
-      meters,
-      kilo(meters),
-      centi(meters),
-      milli(meters),
-      micro(meters),
-    ])
+    const autoPrefixer = meters.createDynamicFormatter(
+      [
+        meters, //
+        kilo(meters),
+        centi(meters),
+        milli(meters),
+        micro(meters),
+      ],
+      { valueDisplay: "full-precision" },
+      Measure.createMeasureFormatter(),
+    )
 
     const vals = [
       autoPrefixer(0), // m -> 0µm
@@ -194,7 +209,7 @@ describe("Complex Formatting helpers", () => {
       autoPrefixer(50_000), // m -> 50km
       autoPrefixer(100_000), // m -> 100km
       autoPrefixer(500_000), // m -> 500km
-    ].map(({ value, text }) => `${value}${text}`)
+    ].map(({ formatted, measure }) => `${formatted}${measure}`)
 
     expect(vals).toEqual([
       "0µm", //
@@ -229,13 +244,17 @@ describe("Complex Formatting helpers", () => {
     const milli = Measure.prefix("milli", "m", 1e-3, ALLOW_SI_PREFIX)
     const micro = Measure.prefix("micro", "µ", 1e-6, ALLOW_SI_PREFIX)
 
-    const autoPrefixer = meters.createDynamicFormatter([
-      meters,
-      kilo(meters),
-      centi(meters),
-      milli(meters),
-      micro(meters),
-    ])
+    const autoPrefixer = meters.createDynamicFormatter(
+      [
+        meters, //
+        kilo(meters),
+        centi(meters),
+        milli(meters),
+        micro(meters),
+      ],
+      { valueDisplay: "full-precision" },
+      Measure.createMeasureFormatter(),
+    )
 
     const vals = [
       autoPrefixer(0), // m -> 0µm
@@ -261,7 +280,7 @@ describe("Complex Formatting helpers", () => {
       autoPrefixer(50_000), // m -> 50km
       autoPrefixer(100_000), // m -> 100km
       autoPrefixer(500_000), // m -> 500km
-    ].map(({ value, text }) => `${value}${text}`)
+    ].map(({ formatted, measure }) => `${formatted}${measure}`)
 
     expect(vals).toEqual([
       "0µm", //
@@ -291,32 +310,46 @@ describe("Complex Formatting helpers", () => {
   })
 
   it("multi-unit formatter for feet and inches", () => {
-    const autoPrefixer = meters.createMultiUnitFormatter([feet, inches])
+    const autoPrefixer = meters.createMultiUnitFormatter(
+      [
+        feet, //
+        inches,
+      ],
+      { valueDisplay: "nearest", value: 1 },
+      Measure.createMeasureFormatter(),
+    )
 
     const one = autoPrefixer(1)
     const zero = autoPrefixer(0)
     const negOne = autoPrefixer(-1)
     const two = autoPrefixer(2.1)
 
-    expect(one[0].value).toBeCloseTo(3)
-    expect(one[0].text).toBe("ft")
-    expect(one[1].value).toBeCloseTo(3.37)
-    expect(one[1].text).toBe("in")
+    expect(one[0].converted).toBeCloseTo(3)
+    expect(one[0].formatted).toBe("3")
+    expect(one[0].measure).toBe("ft")
+    expect(one[1].converted).toBeCloseTo(3.37)
+    expect(one[1].formatted).toBe("3")
+    expect(one[1].measure).toBe("in")
 
     // zero provides 0 of the smallest unit
-    expect(zero[0].value).toBeCloseTo(0)
-    expect(zero[0].text).toBe("in")
+    expect(zero[0].converted).toBeCloseTo(0)
+    expect(zero[0].formatted).toBe("0")
+    expect(zero[0].measure).toBe("in")
 
     // negative numbers have the first non-zero element as a zero
-    expect(negOne[0].value).toBeCloseTo(-3)
-    expect(negOne[0].text).toBe("ft")
-    expect(negOne[1].value).toBeCloseTo(3.37)
-    expect(negOne[1].text).toBe("in")
+    expect(negOne[0].converted).toBeCloseTo(-3)
+    expect(negOne[0].formatted).toBe("-3")
+    expect(negOne[0].measure).toBe("ft")
+    expect(negOne[1].converted).toBeCloseTo(3.37)
+    expect(negOne[1].formatted).toBe("3")
+    expect(negOne[1].measure).toBe("in")
 
-    expect(two[0].value).toBeCloseTo(6)
-    expect(two[0].text).toBe("ft")
-    expect(two[1].value).toBeCloseTo(10.677)
-    expect(two[1].text).toBe("in")
+    expect(two[0].converted).toBeCloseTo(6)
+    expect(two[0].formatted).toBe("6")
+    expect(two[0].measure).toBe("ft")
+    expect(two[1].converted).toBeCloseTo(10.677)
+    expect(two[1].formatted).toBe("11")
+    expect(two[1].measure).toBe("in")
   })
 
   it("multi-unit formatter for feet and inches with custom symbols", () => {
@@ -325,25 +358,36 @@ describe("Complex Formatting helpers", () => {
         feet.withIdentifiers("foot", "feet", `"`), //
         inches.withIdentifiers("inch", "inches", `'`),
       ],
-      1,
+      { valueDisplay: "nearest", value: 1 },
+      Measure.createMeasureFormatter(),
     )
 
     const sixFour = autoPrefixer(1.92)
-      .map(({ value, text }) => `${value}${text}`)
+      .map(({ formatted, measure }) => `${formatted}${measure}`)
       .join("")
 
     expect(sixFour).toBe(`6"4'`)
   })
 
   it("multi-unit toNearest naming formatter for hours, minutes, seconds", () => {
-    const autoPrefixer = seconds.createMultiUnitFormatter([minutes, hours, seconds], 0.25, "name")
+    const autoPrefixer = seconds.createMultiUnitFormatter(
+      [minutes, hours, seconds],
+      {
+        valueDisplay: "nearest",
+        value: 0.25,
+      },
+      Measure.createMeasureFormatter({
+        unitText: "name",
+        pow: "name",
+      }),
+    )
 
     const one = autoPrefixer(525675.285)
 
     expect(one).toEqual([
-      { value: 146, text: "hours" },
-      { value: 1, text: "minute" },
-      { value: 15.25, text: "seconds" },
+      { converted: 146, formatted: "146", measure: "hours" },
+      { converted: 1, formatted: "1", measure: "minute" },
+      { converted: 15.285000000032596, formatted: "15.25", measure: "seconds" },
     ])
   })
 })

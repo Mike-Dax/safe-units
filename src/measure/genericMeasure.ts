@@ -1,4 +1,3 @@
-import { PrefixFn } from "./genericMeasureUtils"
 import { IdentityMask, MarkMaskAsUsed, PrefixMask } from "./prefixMask"
 import { UnitSystem } from "./unitSystem"
 import {
@@ -55,12 +54,31 @@ export interface MeasureFormatter<R, PR, T, O, PO, RE, PA> {
 }
 
 /**
- * Two stage rounding and formatting for values.
+ * How to display the value.
  */
-export interface ValueFormatter<N, O> {
-  round: (value: N) => N
-  format: (rounded: N) => O
-}
+export type ValueFormatOptions<N> = {
+  valueDisplay?: "full-precision" | "fixed-digits" | "significant-figures" | "exponential" | "nearest"
+} & (
+  | {
+      valueDisplay: "full-precision"
+    }
+  | {
+      valueDisplay: "fixed-digits"
+      digits: number
+    }
+  | {
+      valueDisplay: "significant-figures"
+      significantFigures: number
+    }
+  | {
+      valueDisplay: "exponential"
+      fractionDigits: number
+    }
+  | {
+      valueDisplay: "nearest"
+      value: N
+    }
+)
 
 /** The set of numeric operations required to fully represent a `GenericMeasure` for a given numeric type */
 export interface NumericOperations<N> {
@@ -92,6 +110,21 @@ export interface NumericOperations<N> {
   compare(left: N, right: N): number
   /** Formats a number for display */
   format(value: N): string
+  /**
+   * Returns a string representing a number in fixed-point notation.
+   * @param fractionDigits Number of digits after the decimal point. Must be in the range 0 - 20, inclusive.
+   */
+  toFixed(value: N, fractionDigits?: number): string
+  /**
+   * Returns a string containing a number represented either in exponential or fixed-point notation with a specified number of digits.
+   * @param precision Number of significant digits. Must be in the range 1 - 21, inclusive.
+   */
+  toPrecision(value: N, precision?: number): string
+  /**
+   * Returns a string containing a number represented in exponential notation.
+   * @param fractionDigits Number of digits after the decimal point. Must be in the range 0 - 20, inclusive.
+   */
+  toExponential(value: N, fractionDigits?: number): string
 }
 
 /** A numeric value with a corresponding unit of measurement. */
@@ -322,26 +355,28 @@ export interface GenericMeasure<N, Basis, U extends Unit<Basis>, AllowedPrefixes
   /** Creates a converter function that converts a value of this Measure to a value in another measure. */
   createConverterTo(unit: GenericMeasure<N, Basis, U, AllowedPrefixes>): (value: N) => N
 
-  /** Creates a converter function that converts a value of this Measure to a value in another measure, to the nearest of that other measure. The 'toNearest' argument must be non-zero. */
-  createToNearestConverter(toNearest: N, unit: GenericMeasure<N, Basis, U, AllowedPrefixes>): (value: N) => N
-
-  /** Creates a function that takes a value of this Measure and returns the plural or singular name as a string. */
-  createNameFormatter(): (value: N) => string
+  /**
+   * Create a function that takes a value of this unit and returns a formatted string.
+   *
+   * By default, the string is a full precision representation of the value.
+   */
+  createValueFormatter(options: ValueFormatOptions<N>): (value: N) => string
 
   /**
    * Given an array of Measures, creates a function that takes a value of this Measure
-   * and finds the smallest value above `toNearest` (which is 1 by default).
+   * and finds the smallest converted value above 1.
    *
-   * It returns this value, the symbol, and the converter function.
+   * It returns this converted value, the rounded and formatted value using the provided
+   * `valueFormatter` and `measureFormatter`.
    */
-  createDynamicFormatter(
+  createDynamicFormatter<R, PR, T, O, PO, RE, PA>(
     measures: GenericMeasure<N, Basis, U, AllowedPrefixes>[],
-    toNearest?: N,
-    text?: "symbol" | "name",
+    valueFormat: ValueFormatOptions<N>,
+    measureFormatter: MeasureFormatter<R, PR, T, O, PO, RE, PA>,
   ): (value: N) => {
-    value: N
-    text: string
-    converter: (value: N) => N
+    converted: N
+    formatted: string
+    measure: R | PR | T | O | PO | RE | PA
   }
 
   /**
@@ -359,18 +394,16 @@ export interface GenericMeasure<N, Basis, U extends Unit<Basis>, AllowedPrefixes
    *
    * eg 3664 seconds = 1 hour, 1 minute, 4 seconds
    */
-  createMultiUnitFormatter(
+  createMultiUnitFormatter<R, PR, T, O, PO, RE, PA>(
     measures: GenericMeasure<N, Basis, U, AllowedPrefixes>[],
-    toNearest?: N,
-    text?: "symbol" | "name",
+    valueFormat: ValueFormatOptions<N>,
+    measureFormatter: MeasureFormatter<R, PR, T, O, PO, RE, PA>,
     keepZeros?: boolean,
   ): (value: N) => {
-    value: N
-    text: string
+    converted: N
+    formatted: string
+    measure: R | PR | T | O | PO | RE | PA
   }[]
-
-  /** Return the symbol of this Measure. */
-  getSymbol(): string
 }
 
 /**
