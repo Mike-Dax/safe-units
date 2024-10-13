@@ -5,7 +5,7 @@ import { ALLOW_SI_PREFIX } from "./metric"
 
 const SIUnitSystemBasis = {
   length: "m",
-  mass: "kg",
+  mass: "g",
   time: "s",
   current: "A",
   temperatureDifference: "K",
@@ -25,7 +25,7 @@ export const SIUnitSystem = UnitSystem.from<SIUnitSystem>(SIUnitSystemBasis)
 
 export const createSIBaseUnits = <N>(measure: GenericMeasureType<N, any>) => ({
   meters: measure.dimension(SIUnitSystem, "length", "meter", "meters", "m", ALLOW_SI_PREFIX),
-  kilograms: measure.dimension(SIUnitSystem, "mass", "kilogram", "kilograms", "kg", ALLOW_SI_PREFIX),
+  grams: measure.dimension(SIUnitSystem, "mass", "gram", "grams", "g", ALLOW_SI_PREFIX),
   seconds: measure.dimension(SIUnitSystem, "time", "second", "seconds", "s", ALLOW_SI_PREFIX),
   amperes: measure.dimension(SIUnitSystem, "current", "ampere", "amperes", "A", ALLOW_SI_PREFIX),
   kelvinDifference: measure.dimension(
@@ -51,16 +51,5 @@ export const createSIBaseUnits = <N>(measure: GenericMeasureType<N, any>) => ({
   bits: measure.dimension(SIUnitSystem, "memory", "bit", "bits", "b", ALLOW_SI_PREFIX),
 })
 
-export const {
-  meters,
-  kilograms,
-  seconds,
-  amperes,
-  kelvinDifference,
-  kelvin,
-  moles,
-  candelas,
-  radians,
-  steradians,
-  bits,
-} = createSIBaseUnits(Measure)
+export const { meters, grams, seconds, amperes, kelvinDifference, kelvin, moles, candelas, radians, steradians, bits } =
+  createSIBaseUnits(Measure)

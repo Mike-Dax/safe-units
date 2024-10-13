@@ -1,32 +1,9 @@
 import { PrefixFn } from "../measure/genericMeasureUtils"
 import { Measure } from "../measure/numberMeasure"
-import { amperes, candelas, kilograms, meters, moles, seconds, steradians } from "./base"
+import { amperes, candelas, grams, meters, moles, seconds, steradians } from "./base"
 import * as Quantity from "./quantities"
 
-export const hertz: Quantity.Frequency = seconds.inverse().withIdentifiers("hertz", "hertz", "Hz")
-export const newtons: Quantity.Force = kilograms
-  .times(meters.per(seconds.squared()))
-  .withIdentifiers("newton", "newtons", "N")
-export const pascals: Quantity.Pressure = newtons.per(meters.squared()).withIdentifiers("pascal", "pascals", "Pa")
-export const joules: Quantity.Energy = newtons.times(meters).withIdentifiers("joule", "joules", "J")
-export const watts: Quantity.Power = joules.per(seconds).withIdentifiers("watt", "watts", "W")
-export const volts: Quantity.Voltage = watts.per(amperes).withIdentifiers("volt", "volts", "V")
-export const coulombs: Quantity.ElectricCharge = amperes.times(seconds).withIdentifiers("coulomb", "coulombs", "C")
-export const farads: Quantity.ElectricalCapacitance = coulombs.per(volts).withIdentifiers("farad", "farads", "F")
-export const ohms: Quantity.ElectricalResistance = volts.per(amperes).withIdentifiers("ohm", "ohms", "Ω")
-export const siemens: Quantity.ElectricalConductance = amperes.per(volts).withIdentifiers("siemens", "siemens", "S")
-export const henrys: Quantity.ElectricalInductance = ohms.times(seconds).withIdentifiers("henry", "henries", "H")
-export const webers: Quantity.MagneticFlux = joules.per(amperes).withIdentifiers("weber", "webers", "Wb")
-export const teslas: Quantity.MagneticFluxDensity = volts
-  .times(seconds.per(meters.squared()))
-  .withIdentifiers("tesla", "teslas", "T")
-export const sieverts: Quantity.RadiationDose = joules.per(kilograms).withIdentifiers("sievert", "sieverts", "Sv")
-export const katals: Quantity.CatalyticActivity = moles.per(seconds).withIdentifiers("katal", "katals", "kat")
-export const lumens: Quantity.LuminousFlux = candelas.times(steradians).withIdentifiers("lumen", "lumens", "lm")
-export const luxes: Quantity.Illuminance = lumens.per(meters.squared()).withIdentifiers("lux", "luxes", "lx")
-
 // Prefixes
-
 export const ALLOW_SI_SUBMULTIPLE_PREFIX = {
   PREFIX_SI_SUBMULTIPLE: true,
 } as const
@@ -64,3 +41,25 @@ export const femto = Measure.prefix("femto", "f", 1e-15, ALLOW_SI_SUBMULTIPLE_PR
 export const atto = Measure.prefix("atto", "a", 1e-18, ALLOW_SI_SUBMULTIPLE_PREFIX)
 export const zepto = Measure.prefix("zepto", "z", 1e-21, ALLOW_SI_SUBMULTIPLE_PREFIX)
 export const yocto = Measure.prefix("yocto", "y", 1e-24, ALLOW_SI_SUBMULTIPLE_PREFIX)
+
+export const hertz: Quantity.Frequency = seconds.inverse().withIdentifiers("hertz", "hertz", "Hz")
+export const newtons: Quantity.Force = kilo(grams)
+  .times(meters.per(seconds.squared()))
+  .withIdentifiers("newton", "newtons", "N")
+export const pascals: Quantity.Pressure = newtons.per(meters.squared()).withIdentifiers("pascal", "pascals", "Pa")
+export const joules: Quantity.Energy = newtons.times(meters).withIdentifiers("joule", "joules", "J")
+export const watts: Quantity.Power = joules.per(seconds).withIdentifiers("watt", "watts", "W")
+export const volts: Quantity.Voltage = watts.per(amperes).withIdentifiers("volt", "volts", "V")
+export const coulombs: Quantity.ElectricCharge = amperes.times(seconds).withIdentifiers("coulomb", "coulombs", "C")
+export const farads: Quantity.ElectricalCapacitance = coulombs.per(volts).withIdentifiers("farad", "farads", "F")
+export const ohms: Quantity.ElectricalResistance = volts.per(amperes).withIdentifiers("ohm", "ohms", "Ω")
+export const siemens: Quantity.ElectricalConductance = amperes.per(volts).withIdentifiers("siemens", "siemens", "S")
+export const henrys: Quantity.ElectricalInductance = ohms.times(seconds).withIdentifiers("henry", "henries", "H")
+export const webers: Quantity.MagneticFlux = joules.per(amperes).withIdentifiers("weber", "webers", "Wb")
+export const teslas: Quantity.MagneticFluxDensity = volts
+  .times(seconds.per(meters.squared()))
+  .withIdentifiers("tesla", "teslas", "T")
+export const sieverts: Quantity.RadiationDose = joules.per(kilo(grams)).withIdentifiers("sievert", "sieverts", "Sv")
+export const katals: Quantity.CatalyticActivity = moles.per(seconds).withIdentifiers("katal", "katals", "kat")
+export const lumens: Quantity.LuminousFlux = candelas.times(steradians).withIdentifiers("lumen", "lumens", "lm")
+export const luxes: Quantity.Illuminance = lumens.per(meters.squared()).withIdentifiers("lux", "luxes", "lx")

@@ -1,5 +1,5 @@
 import { Measure } from "../measure/numberMeasure"
-import { kelvin, kelvinDifference, kilograms, meters, seconds } from "./base"
+import { kelvin, kelvinDifference, grams, meters, seconds } from "./base"
 import { Area, Length, Mass, TemperatureDifference, ThermodynamicTemperature, Time } from "./quantities"
 
 // Time
@@ -28,7 +28,6 @@ export const roods: Area = furlongs.times(rods).withIdentifiers("rood", "roods",
 export const acres: Area = furlongs.times(chains).withIdentifiers("acre", "acres", "acre")
 
 // Mass
-export const grams: Mass = Measure.from(0.001, kilograms, "gram", "grams", "g")
 export const pounds: Mass = Measure.from(453.592_37, grams, "pound", "pounds", "lb")
 export const grains: Mass = Measure.from(1 / 7000, pounds, "grain", "grains", "gr")
 export const ounces: Mass = Measure.from(1 / 16, pounds, "ounce", "ounces", "oz")

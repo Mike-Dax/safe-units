@@ -1,4 +1,4 @@
-import { feet, hours, kilo, kilograms, meters, seconds } from "../../unit"
+import { feet, hours, kilo, grams, meters, seconds } from "../../unit"
 import { Measure } from "../numberMeasure"
 import { represent } from "../represent"
 

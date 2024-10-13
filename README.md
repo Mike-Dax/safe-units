@@ -53,13 +53,13 @@ yarn add safe-units
 ### Unit Arithmetic
 
 ```ts
-import { bars, kilograms, Measure, meters, milli, seconds } from "safe-units";
+import { bars, grams, Measure, meters, milli, kilo, seconds } from "safe-units";
 
 const width = Measure.of(3, meters);
 const height = Measure.of(4, meters);
 const area = width.times(height).scale(0.5);
 
-const mass = Measure.of(30, kilograms);
+const mass = Measure.of(30, kilo(grams));
 const mps2 = meters.per(seconds.squared());
 const acceleration = Measure.of(9.8, mps2);
 
@@ -114,12 +114,12 @@ speedOfLight.in(mfPerUFtn); // "1.8026174997852542 Mfur/µftn"
 ### Deriving Quantities
 
 ```ts
-import { kilograms, liters, Mass, Measure, Volume } from "safe-units";
+import { kilo, grams, liters, Mass, Measure, Volume } from "safe-units";
 
 const VolumeDensity = Mass.over(Volume);
 type VolumeDensity = typeof VolumeDensity;
 
-const mass = Measure.of(30, kilograms);
+const mass = Measure.of(30, kilo(grams));
 const volume = Measure.of(3, liters);
 
 const density: VolumeDensity = mass.over(volume);

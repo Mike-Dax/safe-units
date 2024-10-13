@@ -2,7 +2,7 @@ import { Measure } from "../numberMeasure"
 
 import {
   meters,
-  kilograms,
+  grams,
   seconds,
   amperes,
   kelvinDifference,
@@ -162,7 +162,7 @@ const prefixes: PrefixWithIdentifiers[] = Object.values(prefixesObject)
 
 const measuresObject = {
   meters: { measure: meters, symbol: "m", name: "meter" },
-  kilograms: { measure: kilograms, symbol: "kg", name: "kilogram" },
+  kilograms: { measure: kilo(grams), symbol: "kg", name: "kilogram" },
   seconds: { measure: seconds, symbol: "s", name: "second" },
   amperes: { measure: amperes, symbol: "A", name: "ampere" },
   kelvins: { measure: kelvinDifference, symbol: "K", name: "kelvin" },

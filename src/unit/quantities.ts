@@ -8,7 +8,7 @@ import {
   candelas,
   kelvin,
   kelvinDifference,
-  kilograms,
+  grams,
   meters,
   moles,
   radians,
@@ -30,8 +30,8 @@ export type Length<N = number> = LiftMeasure<typeof meters, N>
 export const Length: Length = meters
 
 /** g */
-export type Mass<N = number> = LiftMeasure<typeof kilograms, N>
-export const Mass: Mass = kilograms
+export type Mass<N = number> = LiftMeasure<typeof grams, N>
+export const Mass: Mass = grams
 
 /** s */
 export type Time<N = number> = LiftMeasure<typeof seconds, N>
