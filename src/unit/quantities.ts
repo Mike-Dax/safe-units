@@ -1,11 +1,13 @@
 import { GenericMeasure, LiftMeasure } from "../measure/genericMeasure"
 import { Measure } from "../measure/numberMeasure"
+import { PrefixMask } from "../measure/prefixMask"
 import { DimensionlessUnit, Unit } from "../measure/unitTypeArithmetic"
 import {
   amperes,
   bits,
   candelas,
   kelvin,
+  kelvinDifference,
   kilograms,
   meters,
   moles,
@@ -23,45 +25,49 @@ export const Dimensionless: Dimensionless = Measure.dimensionless(SIUnitSystem, 
 
 // Base units
 
-/** meters */
+/** m */
 export type Length<N = number> = LiftMeasure<typeof meters, N>
 export const Length: Length = meters
 
-/** kilograms */
+/** g */
 export type Mass<N = number> = LiftMeasure<typeof kilograms, N>
 export const Mass: Mass = kilograms
 
-/** seconds */
+/** s */
 export type Time<N = number> = LiftMeasure<typeof seconds, N>
 export const Time: Time = seconds
 
-/** Amperes */
+/** A */
 export type ElectricCurrent<N = number> = LiftMeasure<typeof amperes, N>
 export const ElectricCurrent: ElectricCurrent = amperes
 
-/** Kelvin */
-export type Temperature<N = number> = LiftMeasure<typeof kelvin, N>
-export const Temperature: Temperature = kelvin
+/** ΔK */
+export type TemperatureDifference<N = number> = LiftMeasure<typeof kelvinDifference, N>
+export const TemperatureDifference = kelvinDifference
 
-/** moles */
+/** K */
+export type ThermodynamicTemperature<N = number> = LiftMeasure<typeof kelvin, N>
+export const ThermodynamicTemperature = kelvin
+
+/** mol */
 export type AmountOfSubstance<N = number> = LiftMeasure<typeof moles, N>
 export const AmountOfSubstance: AmountOfSubstance = moles
 
-/** candelas */
+/** cd */
 export type LuminousIntensity<N = number> = LiftMeasure<typeof candelas, N>
 export const LuminousIntensity: LuminousIntensity = candelas
 
-/** bits */
+/** b */
 export type Memory<N = number> = LiftMeasure<typeof bits, N>
 export const Memory: Memory = bits
 
 // Angular base units
 
-/** radians */
+/** rad */
 export type PlaneAngle<N = number> = LiftMeasure<typeof radians, N>
 export const PlaneAngle: PlaneAngle = radians
 
-/** steradians */
+/** sr */
 export type SolidAngle<N = number> = LiftMeasure<typeof steradians, N>
 export const SolidAngle: SolidAngle = steradians
 
@@ -281,11 +287,11 @@ export const Irradiance = Power.over(Area)
 
 /** kg ⋅ m / (s² ⋅ K)  */
 export type Entropy<N = number> = LiftMeasure<typeof Entropy, N>
-export const Entropy = Energy.over(Temperature)
+export const Entropy = Energy.over(TemperatureDifference)
 
 /** m² / (s² ⋅ K) */
 export type SpecificHeat<N = number> = LiftMeasure<typeof SpecificHeat, N>
-export const SpecificHeat = Energy.over(Mass.times(Temperature))
+export const SpecificHeat = Energy.over(Mass.times(TemperatureDifference))
 
 /** m³ / kg  */
 export type SpecificVolume<N = number> = LiftMeasure<typeof SpecificVolume, N>
@@ -293,21 +299,21 @@ export const SpecificVolume = Volume.over(Mass)
 
 /** kg ⋅ m / (s³ ⋅ K)  */
 export type ThermalConductivity<N = number> = LiftMeasure<typeof ThermalConductivity, N>
-export const ThermalConductivity = Power.over(Length.times(Temperature))
+export const ThermalConductivity = Power.over(Length.times(TemperatureDifference))
 
-/** s³ ⋅ K / (kg ⋅ m²) */
+/** s³ ⋅ ΔK / (kg ⋅ m²) */
 export type ThermalResistance<N = number> = LiftMeasure<typeof ThermalResistance, N>
-export const ThermalResistance = Temperature.over(Power)
+export const ThermalResistance = TemperatureDifference.over(Power)
 
-/** 1 / K */
+/** 1 / ΔK */
 export type ThermalExpansionCoefficient<N = number> = LiftMeasure<typeof ThermalExpansionCoefficient, N>
-export const ThermalExpansionCoefficient = Temperature.inverse()
+export const ThermalExpansionCoefficient = TemperatureDifference.inverse()
 
-/** K / m */
+/** ΔK / m */
 export type ThermalGradient<N = number> = LiftMeasure<typeof ThermalGradient, N>
-export const ThermalGradient = Temperature.over(Length)
+export const ThermalGradient = TemperatureDifference.over(Length)
 
-/** kg ⋅ m² / (s² ⋅ K ⋅ mol) */
+/** kg ⋅ m² / (s² ⋅ ΔK ⋅ mol) */
 export type MolarEntropy<N = number> = LiftMeasure<typeof MolarEntropy, N>
 export const MolarEntropy = Entropy.over(AmountOfSubstance)
 
@@ -417,7 +423,9 @@ export const AngularVelocity = PlaneAngle.over(Time)
 export type AngularAcceleration<N = number> = LiftMeasure<typeof AngularAcceleration, N>
 export const AngularAcceleration = AngularVelocity.over(Time)
 
-export function measureToUnitString<Basis, U extends Unit<Basis>>(measure: Measure<Basis, U>): string {
+export function measureToUnitString<Basis, U extends Unit<Basis>, AllowedPrefix extends PrefixMask>(
+  measure: Measure<Basis, U, AllowedPrefix>,
+): string {
   const unit = measure.unit
   const dimensions = Object.keys(unit) as Array<keyof typeof unit>
 
@@ -446,7 +454,7 @@ export const unitStringToNiceNames = {
   [measureToUnitString(Mass)]: "Mass",
   [measureToUnitString(Time)]: "Time",
   [measureToUnitString(ElectricCurrent)]: "Electric Current",
-  [measureToUnitString(Temperature)]: "Temperature",
+  [measureToUnitString(TemperatureDifference)]: "Temperature",
   [measureToUnitString(AmountOfSubstance)]: "Amount Of Substance",
   [measureToUnitString(LuminousIntensity)]: "Luminous Intensity",
   [measureToUnitString(Memory)]: "Memory",

@@ -19,13 +19,14 @@ import {
 
 interface GenericMeasureClass<N> {
   createMeasure: <Basis, U extends Unit<Basis>, AllowedPrefixes extends PrefixMask>(
-    value: N,
+    coefficient: N,
     unit: U,
     unitSystem: UnitSystem<Basis>,
     nameSingular: string,
     namePlural: string,
     symbol: string,
     allowedPrefixes?: AllowedPrefixes,
+    constant?: N,
   ) => GenericMeasure<N, Basis, U, AllowedPrefixes>
   isMeasure: (value: unknown) => value is GenericMeasure<N, any, any, any>
 }
@@ -39,7 +40,7 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
     public readonly operation: MeasureOperation<N>
 
     constructor(
-      public readonly value: N,
+      public readonly coefficient: N,
       public readonly unit: U,
       public readonly unitSystem: UnitSystem<Basis>,
       public readonly nameSingular: string,
@@ -47,6 +48,7 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
       public readonly symbol: string,
       public readonly allowedPrefixes: PrefixMask,
       operation?: MeasureOperation<N>,
+      public readonly constant = num.zero(),
     ) {
       this.operation = operation ?? {
         type: "root",
@@ -58,7 +60,7 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
 
     public plus(other: GenericMeasure<N, Basis, U, AllowedPrefixes>): GenericMeasure<N, Basis, U, AllowedPrefixes> {
       return new Measure(
-        num.add(this.value, other.value),
+        num.add(this.coefficient, other.coefficient),
         this.unit,
         this.unitSystem,
         this.nameSingular,
@@ -70,7 +72,7 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
 
     public minus(other: GenericMeasure<N, Basis, U, AllowedPrefixes>): GenericMeasure<N, Basis, U, AllowedPrefixes> {
       return new Measure(
-        num.sub(this.value, other.value),
+        num.sub(this.coefficient, other.coefficient),
         this.unit,
         this.unitSystem,
         this.nameSingular,
@@ -82,7 +84,7 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
 
     public negate(): GenericMeasure<N, Basis, U, AllowedPrefixes> {
       return new Measure(
-        num.neg(this.value),
+        num.neg(this.coefficient),
         this.unit,
         this.unitSystem,
         this.nameSingular,
@@ -94,7 +96,7 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
 
     public scale(value: N): GenericMeasure<N, Basis, U, AllowedPrefixes> {
       return new Measure(
-        num.mult(this.value, value),
+        num.mult(this.coefficient, value),
         this.unit,
         this.unitSystem,
         this.nameSingular,
@@ -112,10 +114,8 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
     ): GenericMeasure<N, Basis, U, IdentityMask<MarkMaskAsUsed<AllowedPrefixes>>> {
       // TODO: Check the prefix mask matches this Measure's allowed mask, otherwise throw. (An incorrect mask should have been prevented via the type system)
 
-      // TODO: Keep the prefix information in history
-
       return new Measure(
-        num.mult(this.value, multiplier),
+        num.mult(this.coefficient, multiplier),
         this.unit,
         this.unitSystem,
         `${name}${this.nameSingular}`,
@@ -132,7 +132,7 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
       // TODO: Disallow prefixing
 
       return new Measure(
-        num.mult(this.value, other.value),
+        num.mult(this.coefficient, other.coefficient),
         this.unitSystem.multiply(this.unit, other.unit),
         this.unitSystem,
         this.nameSingular,
@@ -149,7 +149,7 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
       // TODO: Disallow prefixing
 
       return new Measure(
-        num.div(this.value, other.value),
+        num.div(this.coefficient, other.coefficient),
         this.unitSystem.divide(this.unit, other.unit),
         this.unitSystem,
         this.nameSingular,
@@ -166,7 +166,7 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
       // TODO: Collapse history of repeated pow calls
 
       return new Measure(
-        num.pow(this.value, power),
+        num.pow(this.coefficient, power),
         this.unitSystem.pow(this.unit, power),
         this.unitSystem,
         this.nameSingular,
@@ -179,7 +179,7 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
 
     public reciprocal(): GenericMeasure<N, Basis, ReciprocalUnit<Basis, U>, AllowedPrefixes> {
       return new Measure(
-        num.reciprocal(this.value),
+        num.reciprocal(this.coefficient),
         this.unitSystem.reciprocal(this.unit),
         this.unitSystem,
         this.nameSingular,
@@ -219,7 +219,7 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
     ): GenericMeasure<N, Basis, V, AllowedPrefixes> {
       const newUnit = unitMap?.(this.unit) ?? this.unit
       return new Measure<Basis, V, AllowedPrefixes>(
-        valueMap(this.value),
+        valueMap(this.coefficient),
         newUnit as V,
         this.unitSystem,
         this.nameSingular,
@@ -232,7 +232,7 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
     // Comparisons
 
     public compare(other: GenericMeasure<N, Basis, U, AllowedPrefixes>): number {
-      return num.compare(this.value, other.value)
+      return num.compare(this.coefficient, other.coefficient)
     }
 
     public lt(other: GenericMeasure<N, Basis, U, AllowedPrefixes>): boolean {
@@ -265,12 +265,20 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
       symbol: string,
       allowedPrefixes: NewAllowedPrefixes = {} as NewAllowedPrefixes,
     ): GenericMeasure<N, Basis, U, NewAllowedPrefixes> {
-      return new Measure(this.value, this.unit, this.unitSystem, nameSingular, namePlural, symbol, allowedPrefixes)
+      return new Measure(
+        this.coefficient,
+        this.unit,
+        this.unitSystem,
+        nameSingular,
+        namePlural,
+        symbol,
+        allowedPrefixes,
+      )
     }
 
     public clone(): GenericMeasure<N, Basis, U, AllowedPrefixes> {
       return new Measure(
-        this.value,
+        this.coefficient,
         this.unit,
         this.unitSystem,
         this.nameSingular,
@@ -330,8 +338,20 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
     }
 
     public createConverterTo(unit: GenericMeasure<N, Basis, U, AllowedPrefixes>) {
+      if (num.compare(this.constant, num.zero()) !== 0 || num.compare(unit.constant, num.zero()) !== 0) {
+        // Handle the constant offset case, eg with thermodynamic temperature units
+
+        return (value: N): N => {
+          // convert to the base unit
+          const base = num.mult(num.add(value, this.constant), this.coefficient)
+
+          // convert from the base unit
+          return num.sub(num.div(base, unit.coefficient), unit.constant)
+        }
+      }
+
       // This should all get inlined
-      const factor = num.div(this.value, unit.value)
+      const factor = num.div(this.coefficient, unit.coefficient)
       const multFn = num.mult
 
       return (value: N): N => {
@@ -402,7 +422,7 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
       measure: R | PR | T | O | PO | RE | PA
     } {
       // Sort measures by value from largest to smallest
-      const sortedMeasures = [...measures].sort((a, b) => num.compare(b.value, a.value))
+      const sortedMeasures = [...measures].sort((a, b) => num.compare(b.coefficient, a.coefficient))
 
       // Create converters for each measure
       const converters = sortedMeasures.map(measure => this.createConverterTo(measure))
@@ -461,7 +481,7 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
       }
 
       // Sort measures by value from largest to smallest
-      const sortedMeasures = [...measures].sort((a, b) => num.compare(b.value, a.value))
+      const sortedMeasures = [...measures].sort((a, b) => num.compare(b.coefficient, a.coefficient))
 
       // Create converters for each measure
       const converters = sortedMeasures.map(measure => this.createConverterTo(measure))
@@ -558,8 +578,18 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
   }
 
   return {
-    createMeasure: (value, unit, unitSystem, nameSingular, namePlural, symbol, allowedPrefixes) =>
-      new Measure(value, unit, unitSystem, nameSingular, namePlural, symbol, allowedPrefixes ?? {}),
+    createMeasure: (coefficient, unit, unitSystem, nameSingular, namePlural, symbol, allowedPrefixes, constant) =>
+      new Measure(
+        coefficient,
+        unit,
+        unitSystem,
+        nameSingular,
+        namePlural,
+        symbol,
+        allowedPrefixes ?? {},
+        undefined,
+        constant,
+      ),
     isMeasure: (value): value is GenericMeasure<N, any, any, any> => value instanceof Measure,
   }
 }

@@ -58,7 +58,7 @@ export function wrapUnaryFn<N>(fn: (x: N) => N): UnaryFn<N> {
  * @returns a binary function of measures
  */
 export function wrapBinaryFn<N>(fn: (left: N, right: N) => N): BinaryFn<N> {
-  return (left, right) => left.unsafeMap(lValue => fn(lValue, right.value))
+  return (left, right) => left.unsafeMap(lValue => fn(lValue, right.coefficient))
 }
 
 /**
@@ -71,7 +71,7 @@ export function wrapBinaryFn<N>(fn: (left: N, right: N) => N): BinaryFn<N> {
  */
 export function wrapSpreadFn<N>(fn: (...x: N[]) => N): SpreadFn<N> {
   return (first, ...rest) => {
-    const measureValues = [first, ...rest].map(m => m.value)
+    const measureValues = [first, ...rest].map(m => m.coefficient)
     const newValue = fn(...measureValues)
     return first.unsafeMap(() => newValue)
   }
@@ -88,7 +88,7 @@ export function wrapSpreadFn<N>(fn: (...x: N[]) => N): SpreadFn<N> {
  */
 export function wrapReducerFn<N>(fn: (curr: N, prev: N, index: number) => N): SpreadFn<N> {
   return (first, ...rest) => {
-    const values = rest.map(m => m.value)
-    return first.unsafeMap(() => values.reduce(fn, first.value))
+    const values = rest.map(m => m.coefficient)
+    return first.unsafeMap(() => values.reduce(fn, first.coefficient))
   }
 }

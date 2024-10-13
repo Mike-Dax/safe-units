@@ -8,7 +8,8 @@ const SIUnitSystemBasis = {
   mass: "kg",
   time: "s",
   current: "A",
-  temperature: "K",
+  temperatureDifference: "K",
+  thermodynamicTemperature: "K",
   substance: "mol",
   intensity: "cd",
   planeAngle: "rad",
@@ -27,7 +28,22 @@ export const createSIBaseUnits = <N>(measure: GenericMeasureType<N, any>) => ({
   kilograms: measure.dimension(SIUnitSystem, "mass", "kilogram", "kilograms", "kg", ALLOW_SI_PREFIX),
   seconds: measure.dimension(SIUnitSystem, "time", "second", "seconds", "s", ALLOW_SI_PREFIX),
   amperes: measure.dimension(SIUnitSystem, "current", "ampere", "amperes", "A", ALLOW_SI_PREFIX),
-  kelvin: measure.dimension(SIUnitSystem, "temperature", "kelvin", "kelvin", "K", ALLOW_SI_PREFIX),
+  kelvinDifference: measure.dimension(
+    SIUnitSystem,
+    "temperatureDifference",
+    "kelvin difference",
+    "kelvins difference",
+    "ΔK",
+    ALLOW_SI_PREFIX,
+  ),
+  kelvin: measure.dimension(
+    SIUnitSystem,
+    "thermodynamicTemperature", // takes into account constant offsets
+    "kelvin",
+    "kelvins",
+    "K",
+    ALLOW_SI_PREFIX,
+  ),
   moles: measure.dimension(SIUnitSystem, "substance", "mole", "moles", "mol", ALLOW_SI_PREFIX),
   candelas: measure.dimension(SIUnitSystem, "intensity", "candela", "candelas", "cd", ALLOW_SI_PREFIX),
   radians: measure.dimension(SIUnitSystem, "planeAngle", "radian", "radians", "rad", ALLOW_SI_PREFIX),
@@ -35,5 +51,16 @@ export const createSIBaseUnits = <N>(measure: GenericMeasureType<N, any>) => ({
   bits: measure.dimension(SIUnitSystem, "memory", "bit", "bits", "b", ALLOW_SI_PREFIX),
 })
 
-export const { meters, kilograms, seconds, amperes, kelvin, moles, candelas, radians, steradians, bits } =
-  createSIBaseUnits(Measure)
+export const {
+  meters,
+  kilograms,
+  seconds,
+  amperes,
+  kelvinDifference,
+  kelvin,
+  moles,
+  candelas,
+  radians,
+  steradians,
+  bits,
+} = createSIBaseUnits(Measure)

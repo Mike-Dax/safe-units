@@ -1,6 +1,17 @@
 import { Measure } from "../numberMeasure"
 
-import { meters, kilograms, seconds, amperes, kelvin, moles, candelas, radians, steradians, bits } from "../../unit"
+import {
+  meters,
+  kilograms,
+  seconds,
+  amperes,
+  kelvinDifference,
+  moles,
+  candelas,
+  radians,
+  steradians,
+  bits,
+} from "../../unit"
 import {
   hertz,
   newtons,
@@ -154,7 +165,7 @@ const measuresObject = {
   kilograms: { measure: kilograms, symbol: "kg", name: "kilogram" },
   seconds: { measure: seconds, symbol: "s", name: "second" },
   amperes: { measure: amperes, symbol: "A", name: "ampere" },
-  kelvins: { measure: kelvin, symbol: "K", name: "kelvin" },
+  kelvins: { measure: kelvinDifference, symbol: "K", name: "kelvin" },
   moles: { measure: moles, symbol: "mol", name: "mole" },
   candelas: { measure: candelas, symbol: "cd", name: "candela" },
   radians: { measure: radians, symbol: "rad", name: "radian" },

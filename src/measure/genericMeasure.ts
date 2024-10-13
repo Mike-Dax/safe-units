@@ -130,7 +130,9 @@ export interface NumericOperations<N> {
 /** A numeric value with a corresponding unit of measurement. */
 export interface GenericMeasure<N, Basis, U extends Unit<Basis>, AllowedPrefixes extends PrefixMask> {
   /** The numeric value of this measure */
-  readonly value: N
+  readonly coefficient: N
+  /** The offset value of this measure. Only used for thermodynamic temperature */
+  readonly constant: N
   /** The unit of this measure */
   readonly unit: U
   /** The unit system of this measure */

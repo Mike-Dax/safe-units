@@ -29,20 +29,20 @@ describe("Number measures", () => {
   describe("construction", () => {
     it("should construct from a number of and a unit", () => {
       const measure = Measure.from(10, mps2)
-      expect(measure.value).toBe(10)
+      expect(measure.coefficient).toBe(10)
       expect(measure.unit).toEqual(mps2.unit)
     })
 
     it("should construct from a number and another measure", () => {
       const kilometer = Measure.from(1000, meters)
       const measure = Measure.from(5.2, kilometer)
-      expect(measure.value).toBe(5200)
+      expect(measure.coefficient).toBe(5200)
       expect(measure.unit).toEqual(meters.unit)
     })
 
     it("should construct dimensionless values", () => {
       const dimensionless = Measure.dimensionless(unitSystem, 3)
-      expect(dimensionless.value).toBe(3)
+      expect(dimensionless.coefficient).toBe(3)
       expect(dimensionless.unit).toEqual({ length: 0, time: 0, mass: 0 })
     })
   })
@@ -53,7 +53,7 @@ describe("Number measures", () => {
     it("should scale the base unit", () => {
       const km = kilo(meters)
       expect(km.unit).toEqual(meters.unit)
-      expect(km.value).toBe(1000)
+      expect(km.coefficient).toBe(1000)
     })
 
     it("should apply a prefix when a symbol is present on the base unit", () => {
@@ -64,7 +64,7 @@ describe("Number measures", () => {
       const blargs = Measure.from(1e-3, meters)
       const kblargs = kilo(blargs)
       expect(kblargs.symbol).toBeUndefined()
-      expect(kblargs.value).toBe(1)
+      expect(kblargs.coefficient).toBe(1)
     })
   })
 

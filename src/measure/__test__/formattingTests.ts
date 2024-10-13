@@ -1,28 +1,84 @@
 import { Measure } from "../numberMeasure"
 import { UnitSystem } from "../unitSystem"
 
+const ALLOW_SI_PREFIX = {
+  PREFIX_SI: true,
+} as const
+
+const unitSystem = UnitSystem.from({
+  length: "m",
+  mass: "g",
+  time: "s",
+  temperatureDifference: "ΔK",
+  thermodynamicTemperature: "K",
+})
+
+const milli = Measure.prefix("milli", "m", 1e-3, ALLOW_SI_PREFIX)
+const kilo = Measure.prefix("kilo", "k", 1e3, ALLOW_SI_PREFIX)
+
+const meters = Measure.dimension(unitSystem, "length", "meter", "meters", "m", ALLOW_SI_PREFIX)
+const gram = Measure.dimension(unitSystem, "mass", "gram", "grams", "g", ALLOW_SI_PREFIX)
+const feet = Measure.from(0.3048, meters, "foot", "feet", "ft")
+const inches = Measure.from(1 / 12, feet, "inch", "inches", "in")
+
+const seconds = Measure.dimension(unitSystem, "time", "second", "seconds", "s")
+const minutes = Measure.from(60, seconds, "minute", "minutes", "m")
+const hours = Measure.from(60, minutes, "hour", "hours", "hr")
+
+const newtons = kilo(gram).times(meters.per(seconds.squared())).withIdentifiers("newton", "newtons", "N")
+const joules = newtons.times(meters).withIdentifiers("joule", "joules", "J")
+
+const kelvinDifference = Measure.dimension(
+  unitSystem,
+  "temperatureDifference",
+  "kelvin difference",
+  "kelvins difference",
+  "ΔK",
+  ALLOW_SI_PREFIX,
+)
+
+const kelvin = Measure.dimension(
+  unitSystem, //
+  "thermodynamicTemperature",
+  "kelvin",
+  "kelvins",
+  "K",
+  ALLOW_SI_PREFIX,
+)
+
+const degreesCelsiusDifference = Measure.from(
+  1,
+  kelvinDifference,
+  "degree Celsius difference",
+  "degrees Celsius difference",
+  "Δ°C",
+)
+const degreesCelsius = Measure.offsetFrom(
+  kelvin, //
+  1,
+  273.15,
+  "degree Celsius",
+  "degrees Celsius",
+  "°C",
+)
+
+const degreesFahrenheitDifference = Measure.from(
+  5 / 9,
+  kelvinDifference,
+  "degree Fahrenheit difference",
+  "degrees Fahrenheit difference",
+  "Δ°F",
+)
+const degreesFahrenheit = Measure.offsetFrom(
+  kelvin, //
+  5 / 9,
+  459.67,
+  "degree Fahrenheit",
+  "degrees Fahrenheit",
+  "°F",
+)
+
 describe("Individual measure formatters", () => {
-  const ALLOW_SI_PREFIX = {
-    PREFIX_SI: true,
-  } as const
-
-  const unitSystem = UnitSystem.from({
-    length: "m",
-    mass: "g",
-    time: "s",
-  })
-
-  const milli = Measure.prefix("milli", "m", 1e-3, ALLOW_SI_PREFIX)
-
-  const meters = Measure.dimension(unitSystem, "length", "meter", "meters", "m", ALLOW_SI_PREFIX)
-  const gram = Measure.dimension(unitSystem, "mass", "gram", "grams", "g", ALLOW_SI_PREFIX)
-  const feet = Measure.from(0.3048, meters, "foot", "feet", "ft")
-  const inches = Measure.from(1 / 12, feet, "inch", "inches", "in")
-
-  const seconds = Measure.dimension(unitSystem, "time", "second", "seconds", "s")
-  const minutes = Measure.from(60, seconds, "minute", "minutes", "m")
-  const hours = Measure.from(60, minutes, "hour", "hours", "hr")
-
   const corpus: {
     measure: Measure<any, any, any>
     pluralName: string
@@ -53,6 +109,12 @@ describe("Individual measure formatters", () => {
       singularName: "meter per second to the sixth",
       symbol: "m/s⁶", // to the 1 is dropped to nothing
     },
+    {
+      measure: kilo(joules).per(degreesCelsiusDifference),
+      pluralName: "kilojoules per degree Celsius difference",
+      singularName: "kilojoule per degree Celsius difference",
+      symbol: "kJ/Δ°C",
+    },
   ]
 
   for (const example of corpus) {
@@ -78,32 +140,13 @@ describe("Individual measure formatters", () => {
 })
 
 describe("Complex Formatting helpers", () => {
-  const ALLOW_SI_PREFIX = {
-    PREFIX_SI: true,
-  } as const
-
-  const unitSystem = UnitSystem.from({
-    length: "m",
-    mass: "kg",
-    time: "s",
-  })
-
-  const meters = Measure.dimension(unitSystem, "length", "meter", "meters", "m", ALLOW_SI_PREFIX)
-  const kilogram = Measure.dimension(unitSystem, "mass", "gram", "grams", "g", ALLOW_SI_PREFIX)
-  const feet = Measure.from(0.3048, meters, "foot", "feet", "ft")
-  const inches = Measure.from(1 / 12, feet, "inch", "inches", "in")
-
-  const seconds = Measure.dimension(unitSystem, "time", "second", "seconds", "s")
-  const minutes = Measure.from(60, seconds, "minute", "minutes", "m")
-  const hours = Measure.from(60, minutes, "hour", "hours", "hr")
-
   it("meters to feet conversion", () => {
-    const metersToFeet = meters.createConverterTo(feet)
+    const converter = meters.createConverterTo(feet)
 
-    const one = metersToFeet(1)
-    const zero = metersToFeet(0)
-    const negOne = metersToFeet(-1)
-    const two = metersToFeet(2)
+    const one = converter(1)
+    const zero = converter(0)
+    const negOne = converter(-1)
+    const two = converter(2)
 
     expect(one).toBeCloseTo(3.2808)
     expect(zero).toBeCloseTo(0)
@@ -112,17 +155,87 @@ describe("Complex Formatting helpers", () => {
   })
 
   it("feet to meters conversion", () => {
-    const feetToMeters = feet.createConverterTo(meters)
+    const converter = feet.createConverterTo(meters)
 
-    const one = feetToMeters(1)
-    const zero = feetToMeters(0)
-    const negOne = feetToMeters(-1)
-    const two = feetToMeters(2)
+    const one = converter(1)
+    const zero = converter(0)
+    const negOne = converter(-1)
+    const two = converter(2)
 
     expect(one).toBeCloseTo(0.3048)
     expect(zero).toBeCloseTo(0)
     expect(negOne).toBeCloseTo(-0.3048)
     expect(two).toBeCloseTo(0.6096)
+  })
+
+  it("thermodynamic degrees C to Kelvins conversion", () => {
+    const converter = degreesCelsius.createConverterTo(kelvin)
+
+    const one = converter(1)
+    const zero = converter(0)
+    const negOne = converter(-1)
+    const absZero = converter(-273.15)
+
+    expect(one).toBeCloseTo(274.15)
+    expect(zero).toBeCloseTo(273.15)
+    expect(negOne).toBeCloseTo(272.15)
+    expect(absZero).toBeCloseTo(0)
+  })
+
+  it("degrees C difference to Kelvins difference conversion", () => {
+    const converter = degreesCelsiusDifference.per(seconds).createConverterTo(kelvinDifference.per(seconds))
+
+    const one = converter(1)
+    const zero = converter(0)
+    const negOne = converter(-1)
+    const two = converter(2)
+
+    expect(one).toBeCloseTo(1)
+    expect(zero).toBeCloseTo(0)
+    expect(negOne).toBeCloseTo(-1)
+    expect(two).toBeCloseTo(2)
+  })
+
+  it("thermodynamic degrees C to thermodynamic degrees F conversion", () => {
+    const converter = degreesCelsius.createConverterTo(degreesFahrenheit)
+
+    const one = converter(1)
+    const zero = converter(0)
+    const negOne = converter(-1)
+    const zeroF = converter(-160 / 9)
+
+    expect(one).toBeCloseTo(33.8)
+    expect(zero).toBeCloseTo(32)
+    expect(negOne).toBeCloseTo(30.2)
+    expect(zeroF).toBeCloseTo(0)
+  })
+
+  it("thermodynamic degrees F to thermodynamic degrees C conversion", () => {
+    const converter = degreesFahrenheit.createConverterTo(degreesCelsius)
+
+    const one = converter(1)
+    const zero = converter(0)
+    const negOne = converter(-1)
+    const two = converter(2)
+
+    expect(one).toBeCloseTo((1 - 32) / 1.8)
+    expect(zero).toBeCloseTo((0 - 32) / 1.8)
+    expect(negOne).toBeCloseTo((-1 - 32) / 1.8)
+    expect(two).toBeCloseTo((2 - 32) / 1.8)
+  })
+
+  it("degrees C difference to thermodynamic degrees F difference conversion", () => {
+    const converter = degreesCelsiusDifference.per(seconds).createConverterTo(degreesFahrenheitDifference.per(seconds))
+
+    const one = converter(1)
+    const zero = converter(0)
+    const negOne = converter(-1)
+    const two = converter(2)
+
+    expect(one).toBeCloseTo(1.8)
+    expect(zero).toBeCloseTo(0)
+    expect(negOne).toBeCloseTo(-1.8)
+    expect(two).toBeCloseTo(3.6)
   })
 
   it("meters to nearest 1 foot conversion", () => {
@@ -141,19 +254,19 @@ describe("Complex Formatting helpers", () => {
   })
 
   it("meters to nearest 0.25 feet conversion", () => {
-    const metersToNearestOneFoot = meters.createConverterTo(feet)
+    const converter = meters.createConverterTo(feet)
     const valueFormatter = feet.createValueFormatter({ valueDisplay: "nearest", value: 0.25 })
 
-    const one = valueFormatter(metersToNearestOneFoot(1))
-    const onePointOne = valueFormatter(metersToNearestOneFoot(1.1))
-    const onePointTwo = valueFormatter(metersToNearestOneFoot(1.2))
-    const onePointThree = valueFormatter(metersToNearestOneFoot(1.3))
-    const onePointFour = valueFormatter(metersToNearestOneFoot(1.4))
-    const onePointFive = valueFormatter(metersToNearestOneFoot(1.5))
-    const onePointSevenFive = valueFormatter(metersToNearestOneFoot(1.75))
-    const zero = valueFormatter(metersToNearestOneFoot(0))
-    const negOne = valueFormatter(metersToNearestOneFoot(-1))
-    const two = valueFormatter(metersToNearestOneFoot(2))
+    const one = valueFormatter(converter(1))
+    const onePointOne = valueFormatter(converter(1.1))
+    const onePointTwo = valueFormatter(converter(1.2))
+    const onePointThree = valueFormatter(converter(1.3))
+    const onePointFour = valueFormatter(converter(1.4))
+    const onePointFive = valueFormatter(converter(1.5))
+    const onePointSevenFive = valueFormatter(converter(1.75))
+    const zero = valueFormatter(converter(0))
+    const negOne = valueFormatter(converter(-1))
+    const two = valueFormatter(converter(2))
 
     expect(one).toBe("3.25")
     expect(onePointOne).toBe("3.5")
@@ -310,7 +423,7 @@ describe("Complex Formatting helpers", () => {
   })
 
   it("multi-unit formatter for feet and inches", () => {
-    const autoPrefixer = meters.createMultiUnitFormatter(
+    const formatter = meters.createMultiUnitFormatter(
       [
         feet, //
         inches,
@@ -319,10 +432,10 @@ describe("Complex Formatting helpers", () => {
       Measure.createMeasureFormatter(),
     )
 
-    const one = autoPrefixer(1)
-    const zero = autoPrefixer(0)
-    const negOne = autoPrefixer(-1)
-    const two = autoPrefixer(2.1)
+    const one = formatter(1)
+    const zero = formatter(0)
+    const negOne = formatter(-1)
+    const two = formatter(2.1)
 
     expect(one[0].converted).toBeCloseTo(3)
     expect(one[0].formatted).toBe("3")
@@ -353,7 +466,7 @@ describe("Complex Formatting helpers", () => {
   })
 
   it("multi-unit formatter for feet and inches with custom symbols", () => {
-    const autoPrefixer = meters.createMultiUnitFormatter(
+    const formatter = meters.createMultiUnitFormatter(
       [
         feet.withIdentifiers("foot", "feet", `"`), //
         inches.withIdentifiers("inch", "inches", `'`),
@@ -362,7 +475,7 @@ describe("Complex Formatting helpers", () => {
       Measure.createMeasureFormatter(),
     )
 
-    const sixFour = autoPrefixer(1.92)
+    const sixFour = formatter(1.92)
       .map(({ formatted, measure }) => `${formatted}${measure}`)
       .join("")
 
@@ -370,7 +483,7 @@ describe("Complex Formatting helpers", () => {
   })
 
   it("multi-unit toNearest naming formatter for hours, minutes, seconds", () => {
-    const autoPrefixer = seconds.createMultiUnitFormatter(
+    const formatter = seconds.createMultiUnitFormatter(
       [minutes, hours, seconds],
       {
         valueDisplay: "nearest",
@@ -382,7 +495,7 @@ describe("Complex Formatting helpers", () => {
       }),
     )
 
-    const one = autoPrefixer(525675.285)
+    const one = formatter(525675.285)
 
     expect(one).toEqual([
       { converted: 146, formatted: "146", measure: "hours" },

@@ -60,6 +60,34 @@ interface GenericMeasureFactory<N> {
   ): GenericMeasure<N, Basis, U, OverridingAllowedPrefixes>
 
   /**
+   * Creates a measure as a multiple of another measure, with an offset.
+   *
+   * To convert to the base unit for the quantity use `(value + constant) * coefficient`.
+   * To convert from the base unit, `(value / coefficient) - constant` is used.
+   *
+   * @param coefficient coefficient portion of the conversion factor
+   * @param constant constant portion of the conversion factor
+   * @param offset the number of measures
+   * @param measure the measure to be multiplied
+   * @param symbol an optional unit symbol for this measure
+   * @returns a measure of value number of quantities.
+   */
+  offsetFrom<
+    Basis,
+    U extends Unit<Basis>,
+    AllowedPrefixes extends PrefixMask,
+    OverridingAllowedPrefixes extends PrefixMask = AllowedPrefixes,
+  >(
+    measure: GenericMeasure<N, Basis, U, AllowedPrefixes>,
+    coefficient: N,
+    constant: N,
+    nameSingular: string,
+    namePlural: string,
+    symbol: string,
+    allowedPrefixes?: OverridingAllowedPrefixes,
+  ): GenericMeasure<N, Basis, U, OverridingAllowedPrefixes>
+
+  /**
    * Configures and returns a string formatter.
    */
   createMeasureFormatter(options?: {
@@ -123,7 +151,7 @@ export function createMeasureType<N, S extends {} = {}>(
       createMeasure(num.one(), unitSystem.createDimensionUnit(dimension), unitSystem, nameSingular, namePlural, symbol),
     from: (value, quantity, nameSingular, namePlural, symbol, allowedPrefixes) =>
       createMeasure(
-        num.mult(value, quantity.value),
+        num.mult(value, quantity.coefficient),
         quantity.unit,
         quantity.unitSystem,
         nameSingular,
@@ -131,6 +159,21 @@ export function createMeasureType<N, S extends {} = {}>(
         symbol,
         allowedPrefixes,
       ),
+    offsetFrom: (quantity, coefficient, constant, nameSingular, namePlural, symbol, allowedPrefixes) => {
+      const base = createMeasure(
+        num.mult(coefficient, quantity.coefficient),
+        quantity.unit,
+        quantity.unitSystem,
+        nameSingular,
+        namePlural,
+        symbol,
+        allowedPrefixes,
+        constant,
+      )
+
+      return base
+    },
+
     createMeasureFormatter: (options = {}) => {
       const optionsWithDefaults = {
         unitText: "symbol",

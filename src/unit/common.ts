@@ -1,6 +1,6 @@
 import { Measure } from "../measure/numberMeasure"
-import { kilograms, meters, seconds } from "./base"
-import { Area, Length, Mass, Time } from "./quantities"
+import { kelvin, kelvinDifference, kilograms, meters, seconds } from "./base"
+import { Area, Length, Mass, TemperatureDifference, ThermodynamicTemperature, Time } from "./quantities"
 
 // Time
 export const minutes: Time = Measure.from(60, seconds, "minute", "minutes", "min")
@@ -32,3 +32,36 @@ export const grams: Mass = Measure.from(0.001, kilograms, "gram", "grams", "g")
 export const pounds: Mass = Measure.from(453.592_37, grams, "pound", "pounds", "lb")
 export const grains: Mass = Measure.from(1 / 7000, pounds, "grain", "grains", "gr")
 export const ounces: Mass = Measure.from(1 / 16, pounds, "ounce", "ounces", "oz")
+
+// Temperature
+export const celsiusDifference: TemperatureDifference = Measure.from(
+  1,
+  kelvinDifference,
+  "degree Celsius difference",
+  "degrees Celsius difference",
+  "Δ°C",
+)
+export const celsius: ThermodynamicTemperature = Measure.offsetFrom(
+  kelvin, //
+  1,
+  273.15,
+  "degree Celsius",
+  "degrees Celsius",
+  "°C",
+)
+
+export const fahrenheitDifference: TemperatureDifference = Measure.from(
+  5 / 9,
+  kelvinDifference,
+  "degree Fahrenheit difference",
+  "degrees Fahrenheit difference",
+  "Δ°F",
+)
+export const fahrenheit: ThermodynamicTemperature = Measure.offsetFrom(
+  kelvin, //
+  5 / 9,
+  459.67,
+  "degree Fahrenheit",
+  "degrees Fahrenheit",
+  "°F",
+)
