@@ -9,8 +9,7 @@ const unitSystem = UnitSystem.from({
   length: "m",
   mass: "g",
   time: "s",
-  temperatureDifference: "ΔK",
-  thermodynamicTemperature: "K",
+  temperature: "K",
 })
 
 const milli = Measure.prefix("milli", "m", 1e-3, ALLOW_SI_PREFIX)
@@ -28,55 +27,70 @@ const hours = Measure.from(60, minutes, "hour", "hours", "hr")
 const newtons = kilo(gram).times(meters.per(seconds.squared())).withIdentifiers("newton", "newtons", "N")
 const joules = newtons.times(meters).withIdentifiers("joule", "joules", "J")
 
-const kelvinDifference = Measure.dimension(
-  unitSystem,
-  "temperatureDifference",
-  "kelvin difference",
-  "kelvins difference",
-  "ΔK",
-  ALLOW_SI_PREFIX,
-)
-
 const kelvin = Measure.dimension(
   unitSystem, //
-  "thermodynamicTemperature",
+  "temperature",
   "kelvin",
   "kelvins",
   "K",
   ALLOW_SI_PREFIX,
 )
 
-const degreesCelsiusDifference = Measure.from(
-  1,
-  kelvinDifference,
-  "degree Celsius difference",
-  "degrees Celsius difference",
-  "Δ°C",
-)
-const degreesCelsius = Measure.offsetFrom(
+const celsius = Measure.offsetFrom(
   kelvin, //
   1,
   273.15,
   "degree Celsius",
   "degrees Celsius",
   "°C",
-)
+).superposition((root, leaf) => {
+  if (root === leaf) {
+    return Measure.offsetFrom(
+      kelvin, //
+      1,
+      273.15,
+      "degree Celsius",
+      "degrees Celsius",
+      "°C",
+    )
+  } else {
+    return Measure.from(
+      1,
+      kelvin, //
+      "degree Celsius difference",
+      "degrees Celsius difference",
+      "Δ°C",
+    )
+  }
+})
 
-const degreesFahrenheitDifference = Measure.from(
-  5 / 9,
-  kelvinDifference,
-  "degree Fahrenheit difference",
-  "degrees Fahrenheit difference",
-  "Δ°F",
-)
-const degreesFahrenheit = Measure.offsetFrom(
+const fahrenheit = Measure.offsetFrom(
   kelvin, //
   5 / 9,
   459.67,
   "degree Fahrenheit",
   "degrees Fahrenheit",
   "°F",
-)
+).superposition((root, leaf) => {
+  if (root === leaf) {
+    return Measure.offsetFrom(
+      kelvin, //
+      5 / 9,
+      459.67,
+      "degree Fahrenheit",
+      "degrees Fahrenheit",
+      "°F",
+    )
+  } else {
+    return Measure.from(
+      5 / 9,
+      kelvin, //
+      "degree Fahrenheit difference",
+      "degrees Fahrenheit difference",
+      "Δ°F",
+    )
+  }
+})
 
 describe("Individual measure formatters", () => {
   const corpus: {
@@ -110,10 +124,22 @@ describe("Individual measure formatters", () => {
       symbol: "m/s⁶", // to the 1 is dropped to nothing
     },
     {
-      measure: kilo(joules).per(degreesCelsiusDifference),
+      measure: kilo(joules).per(celsius),
       pluralName: "kilojoules per degree Celsius difference",
       singularName: "kilojoule per degree Celsius difference",
       symbol: "kJ/Δ°C",
+    },
+    {
+      measure: celsius,
+      pluralName: "degrees Celsius",
+      singularName: "degree Celsius",
+      symbol: "°C",
+    },
+    {
+      measure: celsius.per(seconds),
+      pluralName: "degrees Celsius difference per second",
+      singularName: "degree Celsius difference per second",
+      symbol: "Δ°C/s",
     },
   ]
 
@@ -168,8 +194,8 @@ describe("Complex Formatting helpers", () => {
     expect(two).toBeCloseTo(0.6096)
   })
 
-  it("thermodynamic degrees C to Kelvins conversion", () => {
-    const converter = degreesCelsius.createConverterTo(kelvin)
+  it("celsius to kelvin conversion", () => {
+    const converter = celsius.createConverterTo(kelvin)
 
     const one = converter(1)
     const zero = converter(0)
@@ -182,8 +208,8 @@ describe("Complex Formatting helpers", () => {
     expect(absZero).toBeCloseTo(0)
   })
 
-  it("degrees C difference to Kelvins difference conversion", () => {
-    const converter = degreesCelsiusDifference.per(seconds).createConverterTo(kelvinDifference.per(seconds))
+  it("celsius per second to kelvin per second conversion", () => {
+    const converter = celsius.per(seconds).createConverterTo(kelvin.per(seconds))
 
     const one = converter(1)
     const zero = converter(0)
@@ -196,8 +222,8 @@ describe("Complex Formatting helpers", () => {
     expect(two).toBeCloseTo(2)
   })
 
-  it("thermodynamic degrees C to thermodynamic degrees F conversion", () => {
-    const converter = degreesCelsius.createConverterTo(degreesFahrenheit)
+  it("celsius to fahrenheit conversion", () => {
+    const converter = celsius.createConverterTo(fahrenheit)
 
     const one = converter(1)
     const zero = converter(0)
@@ -210,8 +236,8 @@ describe("Complex Formatting helpers", () => {
     expect(zeroF).toBeCloseTo(0)
   })
 
-  it("thermodynamic degrees F to thermodynamic degrees C conversion", () => {
-    const converter = degreesFahrenheit.createConverterTo(degreesCelsius)
+  it("fahrenheit to celsius conversion", () => {
+    const converter = fahrenheit.createConverterTo(celsius)
 
     const one = converter(1)
     const zero = converter(0)
@@ -224,8 +250,70 @@ describe("Complex Formatting helpers", () => {
     expect(two).toBeCloseTo((2 - 32) / 1.8)
   })
 
+  it("celsius to celsius conversion", () => {
+    const converter = celsius.createConverterTo(celsius)
+
+    const one = converter(1)
+    const zero = converter(0)
+    const negOne = converter(-1)
+    const two = converter(2)
+
+    expect(one).toBeCloseTo(1)
+    expect(zero).toBeCloseTo(0)
+    expect(negOne).toBeCloseTo(-1)
+    expect(two).toBeCloseTo(2)
+  })
+
+  it("celsius per millisecond to celsius per millisecond conversion", () => {
+    const converter = celsius.per(milli(seconds)).createConverterTo(celsius.per(milli(seconds)))
+
+    const one = converter(1)
+    const zero = converter(0)
+    const negOne = converter(-1)
+    const two = converter(2)
+
+    expect(one).toBeCloseTo(1)
+    expect(zero).toBeCloseTo(0)
+    expect(negOne).toBeCloseTo(-1)
+    expect(two).toBeCloseTo(2)
+  })
+
+  it("celsius per millisecond to fahrenheit per second", () => {
+    const a = celsius.per(milli(seconds))
+    const b = fahrenheit.per(seconds)
+
+    const converter = a.createConverterTo(b)
+
+    const one = converter(1)
+    const zero = converter(0)
+    const negOne = converter(-1)
+    const two = converter(2)
+
+    expect(one).toBeCloseTo(1800)
+    expect(zero).toBeCloseTo(0)
+    expect(negOne).toBeCloseTo(-1800)
+    expect(two).toBeCloseTo(3600)
+  })
+
+  it("fahrenheit per millisecond to celsius per second", () => {
+    const a = fahrenheit.per(milli(seconds))
+    const b = celsius.per(seconds)
+
+    const converter = a.createConverterTo(b)
+
+    const one = converter(1)
+    const zero = converter(0)
+    const negOne = converter(-1)
+    const two = converter(2)
+
+    expect(one).toBeCloseTo((5 / 9) * 1000)
+    expect(zero).toBeCloseTo(0)
+    expect(negOne).toBeCloseTo((5 / 9) * -1000)
+    expect(two).toBeCloseTo((5 / 9) * 2000)
+  })
+
   it("degrees C difference to thermodynamic degrees F difference conversion", () => {
-    const converter = degreesCelsiusDifference.per(seconds).createConverterTo(degreesFahrenheitDifference.per(seconds))
+    const converter = celsius.per(seconds).createConverterTo(fahrenheit.per(seconds))
 
     const one = converter(1)
     const zero = converter(0)

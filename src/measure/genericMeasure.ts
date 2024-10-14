@@ -38,13 +38,20 @@ export type MeasureOperation<N> =
       measure: GenericMeasure<N, any, any, any>
     }
   | {
-      type: "root" // the root measure is a cyclical reference to `this`
+      type: "leaf" // the leaf measure is a cyclical reference to `this`
       measure: GenericMeasure<N, any, any, any>
+    }
+  | {
+      type: "superposition" // given the root measure, return the next operation
+      collapse: (
+        root: GenericMeasure<N, any, any, any>,
+        leaf: GenericMeasure<N, any, any, any>,
+      ) => GenericMeasure<N, any, any, any>
     }
 
 export interface MeasureFormatter<R, PR, T, O, PO, RE, PA> {
   /** The value is provided to render the singular or plural names */
-  root: (plural: boolean, ident: { symbol: string; nameSingular: string; namePlural: string }) => R
+  leaf: (plural: boolean, ident: { symbol: string; nameSingular: string; namePlural: string }) => R
   prefix: (inner: R | PR | T | O | PO | RE | PA, ident: { symbol: string; name: string }) => PR
   times: (left: R | PR | T | O | PO | RE | PA, right: R | PR | T | O | PO | RE | PA) => T
   over: (numerator: R | PR | T | O | PO | RE | PA, denominator: R | PR | T | O | PO | RE | PA) => O
@@ -230,6 +237,19 @@ export interface GenericMeasure<N, Basis, U extends Unit<Basis>, AllowedPrefixes
   ): GenericMeasure<N, Basis, DivideUnits<Basis, U, V>, AllowedPrefixes>
 
   /**
+   * Create a superposition of this unit with different names. Only used for formatting of temperature Measures.
+   *
+   * @param collapse a function that takes a root and leaf Measure, returns the collapsed measure.
+   * @returns a new superposition measure
+   */
+  superposition(
+    collapse: (
+      root: GenericMeasure<N, Basis, U, AllowedPrefixes>,
+      leaf: GenericMeasure<N, Basis, U, AllowedPrefixes>,
+    ) => GenericMeasure<N, Basis, U, AllowedPrefixes>,
+  ): GenericMeasure<N, Basis, U, AllowedPrefixes>
+
+  /**
    * Squares the measure.
    * @returns this measure multiplied by itself
    */
@@ -314,9 +334,10 @@ export interface GenericMeasure<N, Basis, U extends Unit<Basis>, AllowedPrefixes
    *
    * Optionally takes a custom formatter. By default uses a symbol formatter.
    */
-  format<C, R, PR, T, O, PO, RE, PA>(
+  format<R, PR, T, O, PO, RE, PA>(
     plural: boolean,
-    formatter?: MeasureFormatter<R, PR, T, O, PO, RE, PA>,
+    formatter: MeasureFormatter<R, PR, T, O, PO, RE, PA>,
+    root?: GenericMeasure<N, any, any, any>,
   ): R | PR | T | O | PO | RE | PA
 
   /**

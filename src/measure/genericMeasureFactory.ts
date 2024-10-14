@@ -188,7 +188,7 @@ export function createMeasureType<N, S extends {} = {}>(
 
       type Formatter = MeasureFormatter<string, string, string, string, string, string, string>
 
-      let root: Formatter["root"]
+      let root: Formatter["leaf"]
       let prefix: Formatter["prefix"]
       if (optionsWithDefaults.unitText === "name") {
         root = (plural, { namePlural, nameSingular }) => (plural ? namePlural : nameSingular)
@@ -213,7 +213,7 @@ export function createMeasureType<N, S extends {} = {}>(
       }
 
       const formatter: MeasureFormatter<string, string, string, string, string, string, string> = {
-        root,
+        leaf: root,
         prefix,
         times: (left, right) => `${left}${multiplicationSymbol}${right}`,
         over: (numerator, denominator) => `${numerator}${fractionalSymbol}${denominator}`,

@@ -7,7 +7,6 @@ import {
   bits,
   candelas,
   kelvin,
-  kelvinDifference,
   grams,
   meters,
   moles,
@@ -42,12 +41,12 @@ export type ElectricCurrent<N = number> = LiftMeasure<typeof amperes, N>
 export const ElectricCurrent: ElectricCurrent = amperes
 
 /** ΔK */
-export type TemperatureDifference<N = number> = LiftMeasure<typeof kelvinDifference, N>
-export const TemperatureDifference = kelvinDifference
+export type TemperatureDifference<N = number> = LiftMeasure<typeof kelvin, N>
+export const TemperatureDifference = kelvin
 
 /** K */
-export type ThermodynamicTemperature<N = number> = LiftMeasure<typeof kelvin, N>
-export const ThermodynamicTemperature = kelvin
+export type Temperature<N = number> = LiftMeasure<typeof kelvin, N>
+export const Temperature = kelvin
 
 /** mol */
 export type AmountOfSubstance<N = number> = LiftMeasure<typeof moles, N>

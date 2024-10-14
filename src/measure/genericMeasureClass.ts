@@ -51,13 +51,12 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
       public readonly constant = num.zero(),
     ) {
       this.operation = operation ?? {
-        type: "root",
+        type: "leaf",
         measure: this as GenericMeasure<N, any, any, any>,
       }
     }
 
     // Arithmetic
-
     public plus(other: GenericMeasure<N, Basis, U, AllowedPrefixes>): GenericMeasure<N, Basis, U, AllowedPrefixes> {
       return new Measure(
         num.add(this.coefficient, other.coefficient),
@@ -288,26 +287,55 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
       )
     }
 
+    public superposition(
+      collapse: (
+        root: GenericMeasure<N, Basis, U, AllowedPrefixes>,
+        leaf: GenericMeasure<N, Basis, U, AllowedPrefixes>,
+      ) => GenericMeasure<N, Basis, U, AllowedPrefixes>,
+    ): GenericMeasure<N, Basis, U, AllowedPrefixes> {
+      const su = new Measure(
+        this.coefficient,
+        this.unit,
+        this.unitSystem,
+        this.nameSingular,
+        this.namePlural,
+        this.symbol,
+        this.allowedPrefixes,
+        { type: "superposition", collapse },
+        this.constant, // this is the only operation that carries over the constant
+      )
+
+      return su
+    }
+
     // Formatting
-    public format<R, PR, T, O, PO, RE, PA>(plural: boolean, formatter: MeasureFormatter<R, PR, T, O, PO, RE, PA>) {
+    public format<R, PR, T, O, PO, RE, PA>(
+      plural: boolean,
+      formatter: MeasureFormatter<R, PR, T, O, PO, RE, PA>,
+      root?: GenericMeasure<N, any, any, any>,
+    ) {
+      const thisGen = this as GenericMeasure<N, any, any, any>
+
       switch (this.operation.type) {
-        case "prefix":
-          if (this.operation.measure.operation.type !== "root" && this.operation.measure.operation.type !== "pow") {
-            throw new Error(`A non-root/pow operation was prefixed. This should be disallowed`)
+        case "prefix": {
+          if (this.operation.measure.operation.type !== "leaf" && this.operation.measure.operation.type !== "pow") {
+            throw new Error(`A non-leaf/pow operation was prefixed. This should be disallowed`)
           }
 
-          return formatter.prefix(this.operation.measure.format(plural, formatter), this.operation)
-        case "times":
+          return formatter.prefix(this.operation.measure.format(plural, formatter, root ?? thisGen), this.operation)
+        }
+        case "times": {
           return formatter.times(
-            this.operation.left.format(plural, formatter),
-            this.operation.right.format(plural, formatter),
+            this.operation.left.format(plural, formatter, root ?? thisGen),
+            this.operation.right.format(plural, formatter, root ?? thisGen),
           )
+        }
         case "over": {
           // The numerator is rendered as is.
-          const numerator = this.operation.left.format(plural, formatter)
+          const numerator = this.operation.left.format(plural, formatter, root ?? thisGen)
 
           // The denominator is not pluralised.
-          let denominator = this.operation.right.format(false, formatter)
+          let denominator = this.operation.right.format(false, formatter, root ?? thisGen)
 
           // If the denominator operation is `times`, wrap the output in parentheses.
           if (this.operation.right.operation.type === "times") {
@@ -317,7 +345,7 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
           return formatter.over(numerator, denominator)
         }
         case "pow": {
-          let inner = this.operation.measure.format(plural, formatter)
+          let inner = this.operation.measure.format(plural, formatter, root ?? thisGen)
 
           // If the inner operation is `times`, wrap the output in parentheses.
           if (this.operation.measure.operation.type === "times") {
@@ -326,14 +354,18 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
 
           return formatter.pow(inner, this.operation.power)
         }
-
-        case "reciprocal":
-          return formatter.reciprocal(this.operation.measure.format(plural, formatter))
-        case "root":
-          return formatter.root(plural, this)
-
-        default:
+        case "reciprocal": {
+          return formatter.reciprocal(this.operation.measure.format(plural, formatter, root ?? thisGen))
+        }
+        case "leaf": {
+          return formatter.leaf(plural, this)
+        }
+        case "superposition": {
+          return this.operation.collapse(root ?? thisGen, thisGen).format(plural, formatter)
+        }
+        default: {
           throw new Error(`unimplemented operation`)
+        }
       }
     }
 

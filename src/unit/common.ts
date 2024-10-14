@@ -1,6 +1,6 @@
 import { Measure } from "../measure/numberMeasure"
-import { kelvin, kelvinDifference, grams, meters, seconds } from "./base"
-import { Area, Length, Mass, TemperatureDifference, ThermodynamicTemperature, Time } from "./quantities"
+import { kelvin, grams, meters, seconds } from "./base"
+import { Area, Length, Mass, TemperatureDifference, Temperature, Time } from "./quantities"
 
 // Time
 export const minutes: Time = Measure.from(60, seconds, "minute", "minutes", "min")
@@ -33,34 +33,58 @@ export const grains: Mass = Measure.from(1 / 7000, pounds, "grain", "grains", "g
 export const ounces: Mass = Measure.from(1 / 16, pounds, "ounce", "ounces", "oz")
 
 // Temperature
-export const celsiusDifference: TemperatureDifference = Measure.from(
-  1,
-  kelvinDifference,
-  "degree Celsius difference",
-  "degrees Celsius difference",
-  "Δ°C",
-)
-export const celsius: ThermodynamicTemperature = Measure.offsetFrom(
+export const celsius = Measure.offsetFrom(
   kelvin, //
   1,
   273.15,
   "degree Celsius",
   "degrees Celsius",
   "°C",
-)
+).superposition((root, leaf) => {
+  if (root === leaf) {
+    return Measure.offsetFrom(
+      kelvin, //
+      1,
+      273.15,
+      "degree Celsius",
+      "degrees Celsius",
+      "°C",
+    )
+  } else {
+    return Measure.from(
+      1,
+      kelvin, //
+      "degree Celsius difference",
+      "degrees Celsius difference",
+      "Δ°C",
+    )
+  }
+})
 
-export const fahrenheitDifference: TemperatureDifference = Measure.from(
-  5 / 9,
-  kelvinDifference,
-  "degree Fahrenheit difference",
-  "degrees Fahrenheit difference",
-  "Δ°F",
-)
-export const fahrenheit: ThermodynamicTemperature = Measure.offsetFrom(
+export const fahrenheit = Measure.offsetFrom(
   kelvin, //
   5 / 9,
   459.67,
   "degree Fahrenheit",
   "degrees Fahrenheit",
   "°F",
-)
+).superposition((root, leaf) => {
+  if (root === leaf) {
+    return Measure.offsetFrom(
+      kelvin, //
+      5 / 9,
+      459.67,
+      "degree Fahrenheit",
+      "degrees Fahrenheit",
+      "°F",
+    )
+  } else {
+    return Measure.from(
+      5 / 9,
+      kelvin, //
+      "degree Fahrenheit difference",
+      "degrees Fahrenheit difference",
+      "Δ°F",
+    )
+  }
+})

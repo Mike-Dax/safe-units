@@ -15,5 +15,5 @@ import { Unit } from "./unitTypeArithmetic"
 export function autocomplete<N, Basis, U extends Unit<Basis>, AllowedPrefixes extends PrefixMask>(
   query: string,
   measures: GenericMeasure<N, Basis, U, AllowedPrefixes>[],
-  prefixes: PrefixFn[],
+  prefixes: PrefixFn<PrefixMask, N>[],
 ): GenericMeasure<N, Basis, U, AllowedPrefixes>[] {}
