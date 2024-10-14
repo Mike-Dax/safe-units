@@ -40,10 +40,6 @@ export const Time: Time = seconds
 export type ElectricCurrent<N = number> = LiftMeasure<typeof amperes, N>
 export const ElectricCurrent: ElectricCurrent = amperes
 
-/** ΔK */
-export type TemperatureDifference<N = number> = LiftMeasure<typeof kelvin, N>
-export const TemperatureDifference = kelvin
-
 /** K */
 export type Temperature<N = number> = LiftMeasure<typeof kelvin, N>
 export const Temperature = kelvin
@@ -286,11 +282,11 @@ export const Irradiance = Power.over(Area)
 
 /** kg ⋅ m / (s² ⋅ K)  */
 export type Entropy<N = number> = LiftMeasure<typeof Entropy, N>
-export const Entropy = Energy.over(TemperatureDifference)
+export const Entropy = Energy.over(Temperature)
 
 /** m² / (s² ⋅ K) */
 export type SpecificHeat<N = number> = LiftMeasure<typeof SpecificHeat, N>
-export const SpecificHeat = Energy.over(Mass.times(TemperatureDifference))
+export const SpecificHeat = Energy.over(Mass.times(Temperature))
 
 /** m³ / kg  */
 export type SpecificVolume<N = number> = LiftMeasure<typeof SpecificVolume, N>
@@ -298,19 +294,19 @@ export const SpecificVolume = Volume.over(Mass)
 
 /** kg ⋅ m / (s³ ⋅ K)  */
 export type ThermalConductivity<N = number> = LiftMeasure<typeof ThermalConductivity, N>
-export const ThermalConductivity = Power.over(Length.times(TemperatureDifference))
+export const ThermalConductivity = Power.over(Length.times(Temperature))
 
 /** s³ ⋅ ΔK / (kg ⋅ m²) */
 export type ThermalResistance<N = number> = LiftMeasure<typeof ThermalResistance, N>
-export const ThermalResistance = TemperatureDifference.over(Power)
+export const ThermalResistance = Temperature.over(Power)
 
 /** 1 / ΔK */
 export type ThermalExpansionCoefficient<N = number> = LiftMeasure<typeof ThermalExpansionCoefficient, N>
-export const ThermalExpansionCoefficient = TemperatureDifference.inverse()
+export const ThermalExpansionCoefficient = Temperature.inverse()
 
 /** ΔK / m */
 export type ThermalGradient<N = number> = LiftMeasure<typeof ThermalGradient, N>
-export const ThermalGradient = TemperatureDifference.over(Length)
+export const ThermalGradient = Temperature.over(Length)
 
 /** kg ⋅ m² / (s² ⋅ ΔK ⋅ mol) */
 export type MolarEntropy<N = number> = LiftMeasure<typeof MolarEntropy, N>
@@ -453,7 +449,7 @@ export const unitStringToNiceNames = {
   [measureToUnitString(Mass)]: "Mass",
   [measureToUnitString(Time)]: "Time",
   [measureToUnitString(ElectricCurrent)]: "Electric Current",
-  [measureToUnitString(TemperatureDifference)]: "Temperature",
+  [measureToUnitString(Temperature)]: "Temperature",
   [measureToUnitString(AmountOfSubstance)]: "Amount Of Substance",
   [measureToUnitString(LuminousIntensity)]: "Luminous Intensity",
   [measureToUnitString(Memory)]: "Memory",

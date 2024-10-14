@@ -147,8 +147,16 @@ export function createMeasureType<N, S extends {} = {}>(
     isMeasure,
     dimensionless: (unitSystem, value) =>
       createMeasure(value, unitSystem.createDimensionlessUnit(), unitSystem, "", "", ""),
-    dimension: (unitSystem, dimension, nameSingular, namePlural, symbol) =>
-      createMeasure(num.one(), unitSystem.createDimensionUnit(dimension), unitSystem, nameSingular, namePlural, symbol),
+    dimension: (unitSystem, dimension, nameSingular, namePlural, symbol, allowedPrefixes) =>
+      createMeasure(
+        num.one(),
+        unitSystem.createDimensionUnit(dimension),
+        unitSystem,
+        nameSingular,
+        namePlural,
+        symbol,
+        allowedPrefixes,
+      ),
     from: (value, quantity, nameSingular, namePlural, symbol, allowedPrefixes) =>
       createMeasure(
         num.mult(value, quantity.coefficient),

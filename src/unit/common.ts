@@ -1,6 +1,6 @@
 import { Measure } from "../measure/numberMeasure"
 import { kelvin, grams, meters, seconds } from "./base"
-import { Area, Length, Mass, TemperatureDifference, Temperature, Time } from "./quantities"
+import { Area, Length, Mass, Temperature, Time } from "./quantities"
 
 // Time
 export const minutes: Time = Measure.from(60, seconds, "minute", "minutes", "min")
@@ -33,7 +33,7 @@ export const grains: Mass = Measure.from(1 / 7000, pounds, "grain", "grains", "g
 export const ounces: Mass = Measure.from(1 / 16, pounds, "ounce", "ounces", "oz")
 
 // Temperature
-export const celsius = Measure.offsetFrom(
+export const celsius: Temperature = Measure.offsetFrom(
   kelvin, //
   1,
   273.15,
@@ -61,7 +61,7 @@ export const celsius = Measure.offsetFrom(
   }
 })
 
-export const fahrenheit = Measure.offsetFrom(
+export const fahrenheit: Temperature = Measure.offsetFrom(
   kelvin, //
   5 / 9,
   459.67,

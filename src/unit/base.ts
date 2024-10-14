@@ -27,14 +27,7 @@ export const createSIBaseUnits = <N>(measure: GenericMeasureType<N, any>) => ({
   grams: measure.dimension(SIUnitSystem, "mass", "gram", "grams", "g", ALLOW_SI_PREFIX),
   seconds: measure.dimension(SIUnitSystem, "time", "second", "seconds", "s", ALLOW_SI_PREFIX),
   amperes: measure.dimension(SIUnitSystem, "current", "ampere", "amperes", "A", ALLOW_SI_PREFIX),
-  kelvin: measure.dimension(
-    SIUnitSystem,
-    "temperature", // takes into account constant offsets
-    "kelvin",
-    "kelvins",
-    "K",
-    ALLOW_SI_PREFIX,
-  ),
+  kelvin: measure.dimension(SIUnitSystem, "temperature", "kelvin", "kelvins", "K", ALLOW_SI_PREFIX),
   moles: measure.dimension(SIUnitSystem, "substance", "mole", "moles", "mol", ALLOW_SI_PREFIX),
   candelas: measure.dimension(SIUnitSystem, "intensity", "candela", "candelas", "cd", ALLOW_SI_PREFIX),
   radians: measure.dimension(SIUnitSystem, "planeAngle", "radian", "radians", "rad", ALLOW_SI_PREFIX),

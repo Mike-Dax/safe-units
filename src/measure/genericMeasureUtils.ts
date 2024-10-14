@@ -20,6 +20,10 @@ export type PrefixFn<PrefixToApply, N = number> = (<Basis, U extends Unit<Basis>
   readonly symbol: string
   /** The symbol of the prefix (e.g. m) */
   readonly prefixMask: PrefixToApply
+  /** Whether the prefix can be applied to this measure */
+  canApply: <Basis, U extends Unit<Basis>, MeasureCanApply extends PrefixMask>(
+    measure: GenericMeasure<N, Basis, U, MeasureCanApply>,
+  ) => MeasureCanApply extends PrefixToApply ? true : false
 }
 
 /** A function which transforms a single measure into another measure with the same unit. */

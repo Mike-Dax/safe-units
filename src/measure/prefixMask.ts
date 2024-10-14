@@ -11,3 +11,4 @@ export type IdentityMask<M extends PrefixMask> = Readonly<{
 }>
 
 export const NO_PREFIX_ALLOWED = {} as PrefixMask
+export type NO_PREFIX_ALLOWED = typeof NO_PREFIX_ALLOWED

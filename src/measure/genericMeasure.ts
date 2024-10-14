@@ -1,4 +1,4 @@
-import { IdentityMask, MarkMaskAsUsed, PrefixMask } from "./prefixMask"
+import { IdentityMask, MarkMaskAsUsed, NO_PREFIX_ALLOWED, PrefixMask } from "./prefixMask"
 import { UnitSystem } from "./unitSystem"
 import {
   CubeUnit,
@@ -151,6 +151,8 @@ export interface GenericMeasure<N, Basis, U extends Unit<Basis>, AllowedPrefixes
   /** The symbol of the unit this measure represents (e.g. 0.3048 m = 1 ft) */
   readonly symbol: string
 
+  readonly allowedPrefixes: AllowedPrefixes
+
   /** The operation this Measure represents in its syntax tree. For internal use. */
   readonly operation: MeasureOperation<N>
 
@@ -198,7 +200,7 @@ export interface GenericMeasure<N, Basis, U extends Unit<Basis>, AllowedPrefixes
    * @param power a scalar dimensionless power by which to raise this measure
    * @returns A measure raised to this power
    */
-  pow<Power extends number>(power: Power): GenericMeasure<N, Basis, UnitToPower<Basis, U, Power>, AllowedPrefixes>
+  pow<Power extends number>(power: Power): GenericMeasure<N, Basis, UnitToPower<Basis, U, Power>, NO_PREFIX_ALLOWED>
 
   /**
    * Multiplies this measure with another measure.
@@ -206,8 +208,8 @@ export interface GenericMeasure<N, Basis, U extends Unit<Basis>, AllowedPrefixes
    * @returns the product measure with a unit that's the product of the units
    */
   times<V extends Unit<Basis>>(
-    other: GenericMeasure<N, Basis, V, AllowedPrefixes>,
-  ): GenericMeasure<N, Basis, MultiplyUnits<Basis, U, V>, AllowedPrefixes>
+    other: GenericMeasure<N, Basis, V, any>,
+  ): GenericMeasure<N, Basis, MultiplyUnits<Basis, U, V>, NO_PREFIX_ALLOWED>
 
   /**
    * Divides this measure by another measure.
@@ -215,8 +217,8 @@ export interface GenericMeasure<N, Basis, U extends Unit<Basis>, AllowedPrefixes
    * @returns the quotient measure with a unit that's the quotient of the units
    */
   over<V extends Unit<Basis>>(
-    other: GenericMeasure<N, Basis, V, AllowedPrefixes>,
-  ): GenericMeasure<N, Basis, DivideUnits<Basis, U, V>, AllowedPrefixes>
+    other: GenericMeasure<N, Basis, V, any>,
+  ): GenericMeasure<N, Basis, DivideUnits<Basis, U, V>, NO_PREFIX_ALLOWED>
 
   /**
    * Divides this measure by another measure.
@@ -224,8 +226,8 @@ export interface GenericMeasure<N, Basis, U extends Unit<Basis>, AllowedPrefixes
    * @returns the quotient measure with a unit that's the quotient of the units
    */
   per<V extends Unit<Basis>>(
-    other: GenericMeasure<N, Basis, V, AllowedPrefixes>,
-  ): GenericMeasure<N, Basis, DivideUnits<Basis, U, V>, AllowedPrefixes>
+    other: GenericMeasure<N, Basis, V, any>,
+  ): GenericMeasure<N, Basis, DivideUnits<Basis, U, V>, NO_PREFIX_ALLOWED>
 
   /**
    * Divides this measure by another measure.
@@ -233,8 +235,8 @@ export interface GenericMeasure<N, Basis, U extends Unit<Basis>, AllowedPrefixes
    * @returns the quotient measure with a unit that's the quotient of the units
    */
   div<V extends Unit<Basis>>(
-    other: GenericMeasure<N, Basis, V, AllowedPrefixes>,
-  ): GenericMeasure<N, Basis, DivideUnits<Basis, U, V>, AllowedPrefixes>
+    other: GenericMeasure<N, Basis, V, any>,
+  ): GenericMeasure<N, Basis, DivideUnits<Basis, U, V>, NO_PREFIX_ALLOWED>
 
   /**
    * Create a superposition of this unit with different names. Only used for formatting of temperature Measures.
@@ -253,25 +255,25 @@ export interface GenericMeasure<N, Basis, U extends Unit<Basis>, AllowedPrefixes
    * Squares the measure.
    * @returns this measure multiplied by itself
    */
-  squared(): GenericMeasure<N, Basis, SquareUnit<Basis, U>, AllowedPrefixes>
+  squared(): GenericMeasure<N, Basis, SquareUnit<Basis, U>, NO_PREFIX_ALLOWED>
 
   /**
    * Cubes the measure.
    * @returns this cube of this measure with a unit that's the cube of the unit
    */
-  cubed(): GenericMeasure<N, Basis, CubeUnit<Basis, U>, AllowedPrefixes>
+  cubed(): GenericMeasure<N, Basis, CubeUnit<Basis, U>, NO_PREFIX_ALLOWED>
 
   /**
    * Returns the reciprocal of this measure.
    * @returns the reciprocal of this measure with a recriprocal unit
    */
-  inverse(): GenericMeasure<N, Basis, ReciprocalUnit<Basis, U>, AllowedPrefixes>
+  inverse(): GenericMeasure<N, Basis, ReciprocalUnit<Basis, U>, NO_PREFIX_ALLOWED>
 
   /**
    * Returns the reciprocal of this measure.
    * @returns the reciprocal of this measure with a recriprocal unit
    */
-  reciprocal(): GenericMeasure<N, Basis, ReciprocalUnit<Basis, U>, AllowedPrefixes>
+  reciprocal(): GenericMeasure<N, Basis, ReciprocalUnit<Basis, U>, NO_PREFIX_ALLOWED>
 
   /**
    * Maps the value and possibly unit of this measure.
@@ -366,17 +368,18 @@ export interface GenericMeasure<N, Basis, U extends Unit<Basis>, AllowedPrefixes
    * Adds a symbol to this measure.
    * @param symbol the symbol of the unit represented by this measure
    */
-  withIdentifiers(
+  withIdentifiers<NewAllowedPrefixes extends PrefixMask = AllowedPrefixes>(
     nameSingular: string,
     namePlural: string,
     symbol: string,
-  ): GenericMeasure<N, Basis, U, AllowedPrefixes>
+    allowedPrefixes?: NewAllowedPrefixes,
+  ): GenericMeasure<N, Basis, U, NewAllowedPrefixes>
 
   /** Shallow copies this measure instance. */
   clone(): GenericMeasure<N, Basis, U, AllowedPrefixes>
 
   /** Creates a converter function that converts a value of this Measure to a value in another measure. */
-  createConverterTo(unit: GenericMeasure<N, Basis, U, AllowedPrefixes>): (value: N) => N
+  createConverterTo(unit: GenericMeasure<N, Basis, U, any>): (value: N) => N
 
   /**
    * Create a function that takes a value of this unit and returns a formatted string.

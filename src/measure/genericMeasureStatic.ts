@@ -8,7 +8,7 @@ import {
   wrapReducerFn,
   ValidateAllowedPrefixes,
 } from "./genericMeasureUtils"
-import { PrefixMask } from "./prefixMask"
+import { NO_PREFIX_ALLOWED, PrefixMask } from "./prefixMask"
 import { DivideUnits, MultiplyUnits, Unit, UnitToPower } from "./unitTypeArithmetic"
 
 export interface GenericMeasureStatic<N> {
@@ -31,19 +31,19 @@ export interface GenericMeasureStatic<N> {
   pow<Basis, Left extends Unit<Basis>, Power extends number, AllowedPrefixes extends PrefixMask>(
     left: GenericMeasure<N, Basis, Left, AllowedPrefixes>,
     power: Power,
-  ): GenericMeasure<N, Basis, UnitToPower<Basis, Left, Power>, AllowedPrefixes>
+  ): GenericMeasure<N, Basis, UnitToPower<Basis, Left, Power>, NO_PREFIX_ALLOWED>
 
   /** Static version of `left.times(right)` */
   multiply<Basis, Left extends Unit<Basis>, Right extends Unit<Basis>, AllowedPrefixes extends PrefixMask>(
     left: GenericMeasure<N, Basis, Left, AllowedPrefixes>,
     right: GenericMeasure<N, Basis, Right, AllowedPrefixes>,
-  ): GenericMeasure<N, Basis, MultiplyUnits<Basis, Left, Right>, AllowedPrefixes>
+  ): GenericMeasure<N, Basis, MultiplyUnits<Basis, Left, Right>, NO_PREFIX_ALLOWED>
 
   /** Static version of `left.div(right)` */
   divide<Basis, Left extends Unit<Basis>, Right extends Unit<Basis>, AllowedPrefixes extends PrefixMask>(
     left: GenericMeasure<N, Basis, Left, AllowedPrefixes>,
     right: GenericMeasure<N, Basis, Right, AllowedPrefixes>,
-  ): GenericMeasure<N, Basis, DivideUnits<Basis, Left, Right>, AllowedPrefixes>
+  ): GenericMeasure<N, Basis, DivideUnits<Basis, Left, Right>, NO_PREFIX_ALLOWED>
 
   /**
    * Creates a function that takes a measure and applies a symbol to its prefix and scales it by a given multiplier.
@@ -80,6 +80,16 @@ export const getGenericMeasureStaticMethods = <N>(num: NumericOperations<N>): Ge
       fn.prefixName = name
       fn.symbol = symbol
       fn.value = multiplier
+      fn.canApply = <Basis, U extends Unit<Basis>, AllowedPrefixes extends PrefixMask>(
+        measure: GenericMeasure<N, Basis, U, AllowedPrefixes>,
+      ) => {
+        for (const key in prefixMask) {
+          if (prefixMask[key] && !measure.allowedPrefixes[key]) {
+            return false
+          }
+        }
+        return true
+      }
 
       return fn as PrefixFn<typeof prefixMask, N>
     },

@@ -1,7 +1,6 @@
 import { PrefixFn } from "../measure/genericMeasureUtils"
 import { Measure } from "../measure/numberMeasure"
 import { bits } from "./base"
-import { mega, milli, volts } from "./metric"
 
 export const bytes = Measure.from(8, bits, "byte", "bytes", "B", {
   PREFIX_BINARY_MULTIPLE: true,
@@ -22,15 +21,3 @@ export const pibi = Measure.prefix("pibi", "Pi", 1 << 50, ALLOW_BINARY_MULTIPLE_
 export const exbi = Measure.prefix("exbi", "Ei", 1 << 60, ALLOW_BINARY_MULTIPLE_PREFIX)
 export const zebi = Measure.prefix("zebi", "Zi", 1 << 70, ALLOW_BINARY_MULTIPLE_PREFIX)
 export const yobi = Measure.prefix("yobi", "Yi", 1 << 80, ALLOW_BINARY_MULTIPLE_PREFIX)
-
-const MB = mega(bytes)
-const MiB = mebi(bytes)
-const MiBs = mega(MiB)
-const MiBs2 = mega(MiBs)
-const MMB = mega(MB)
-const MMMB = milli(bytes)
-
-const mV = mega(volts)
-const miV = mebi(volts)
-
-const milbYtes = milli(bytes)

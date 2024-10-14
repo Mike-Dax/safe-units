@@ -46,7 +46,7 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
       public readonly nameSingular: string,
       public readonly namePlural: string,
       public readonly symbol: string,
-      public readonly allowedPrefixes: PrefixMask,
+      public readonly allowedPrefixes: AllowedPrefixes,
       operation?: MeasureOperation<N>,
       public readonly constant = num.zero(),
     ) {
@@ -66,7 +66,7 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
         this.namePlural,
         this.symbol,
         this.allowedPrefixes,
-      )
+      ) as GenericMeasure<N, Basis, U, AllowedPrefixes>
     }
 
     public minus(other: GenericMeasure<N, Basis, U, AllowedPrefixes>): GenericMeasure<N, Basis, U, AllowedPrefixes> {
@@ -78,7 +78,7 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
         this.namePlural,
         this.symbol,
         this.allowedPrefixes,
-      )
+      ) as GenericMeasure<N, Basis, U, AllowedPrefixes>
     }
 
     public negate(): GenericMeasure<N, Basis, U, AllowedPrefixes> {
@@ -90,7 +90,7 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
         this.namePlural,
         this.symbol,
         this.allowedPrefixes,
-      )
+      ) as GenericMeasure<N, Basis, U, AllowedPrefixes>
     }
 
     public scale(value: N): GenericMeasure<N, Basis, U, AllowedPrefixes> {
@@ -102,7 +102,7 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
         this.namePlural,
         this.symbol,
         this.allowedPrefixes,
-      )
+      ) as GenericMeasure<N, Basis, U, AllowedPrefixes>
     }
 
     public applyPrefix<PrefixToApply extends Partial<AllowedPrefixes>>(
@@ -113,6 +113,13 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
     ): GenericMeasure<N, Basis, U, IdentityMask<MarkMaskAsUsed<AllowedPrefixes>>> {
       // TODO: Check the prefix mask matches this Measure's allowed mask, otherwise throw. (An incorrect mask should have been prevented via the type system)
 
+      // Check if the prefix mask matches this Measure's allowed prefixes
+      for (const key in prefixMask) {
+        if (prefixMask[key] && !this.allowedPrefixes[key]) {
+          throw new Error(`Prefix '${key}' is not allowed for measure ${this.namePlural}.`)
+        }
+      }
+
       return new Measure(
         num.mult(this.coefficient, multiplier),
         this.unit,
@@ -122,14 +129,12 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
         `${symbol}${this.symbol}`,
         NO_PREFIX_ALLOWED,
         { type: "prefix", measure: this as GenericMeasure<N, any, any, any>, multiplier, name, symbol },
-      ) as GenericMeasure<N, Basis, U, IdentityMask<MarkMaskAsUsed<AllowedPrefixes>>>
+      ) as unknown as GenericMeasure<N, Basis, U, IdentityMask<MarkMaskAsUsed<AllowedPrefixes>>>
     }
 
     public times<V extends Unit<Basis>>(
       other: GenericMeasure<N, Basis, V, AllowedPrefixes>,
-    ): GenericMeasure<N, Basis, MultiplyUnits<Basis, U, V>, AllowedPrefixes> {
-      // TODO: Disallow prefixing
-
+    ): GenericMeasure<N, Basis, MultiplyUnits<Basis, U, V>, NO_PREFIX_ALLOWED> {
       return new Measure(
         num.mult(this.coefficient, other.coefficient),
         this.unitSystem.multiply(this.unit, other.unit),
@@ -137,14 +142,14 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
         this.nameSingular,
         this.namePlural,
         this.symbol,
-        this.allowedPrefixes,
+        NO_PREFIX_ALLOWED,
         { type: "times", left: this as GenericMeasure<N, any, any, any>, right: other },
       )
     }
 
     public over<V extends Unit<Basis>>(
       other: GenericMeasure<N, Basis, V, AllowedPrefixes>,
-    ): GenericMeasure<N, Basis, DivideUnits<Basis, U, V>, AllowedPrefixes> {
+    ): GenericMeasure<N, Basis, DivideUnits<Basis, U, V>, NO_PREFIX_ALLOWED> {
       // TODO: Disallow prefixing
 
       return new Measure(
@@ -154,14 +159,14 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
         this.nameSingular,
         this.namePlural,
         this.symbol,
-        this.allowedPrefixes,
+        NO_PREFIX_ALLOWED,
         { type: "over", left: this as GenericMeasure<N, any, any, any>, right: other },
       )
     }
 
     public pow<Power extends number>(
       power: Power,
-    ): GenericMeasure<N, Basis, UnitToPower<Basis, U, Power>, AllowedPrefixes> {
+    ): GenericMeasure<N, Basis, UnitToPower<Basis, U, Power>, NO_PREFIX_ALLOWED> {
       // TODO: Collapse history of repeated pow calls
 
       return new Measure(
@@ -171,12 +176,12 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
         this.nameSingular,
         this.namePlural,
         this.symbol,
-        this.allowedPrefixes,
+        NO_PREFIX_ALLOWED,
         { type: "pow", measure: this as GenericMeasure<N, any, any, any>, power },
       )
     }
 
-    public reciprocal(): GenericMeasure<N, Basis, ReciprocalUnit<Basis, U>, AllowedPrefixes> {
+    public reciprocal(): GenericMeasure<N, Basis, ReciprocalUnit<Basis, U>, NO_PREFIX_ALLOWED> {
       return new Measure(
         num.reciprocal(this.coefficient),
         this.unitSystem.reciprocal(this.unit),
@@ -184,32 +189,32 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
         this.nameSingular,
         this.namePlural,
         this.symbol,
-        this.allowedPrefixes,
+        NO_PREFIX_ALLOWED,
         { type: "reciprocal", measure: this as GenericMeasure<N, any, any, any> },
       )
     }
 
     public per<V extends Unit<Basis>>(
       other: GenericMeasure<N, Basis, V, AllowedPrefixes>,
-    ): GenericMeasure<N, Basis, DivideUnits<Basis, U, V>, AllowedPrefixes> {
+    ): GenericMeasure<N, Basis, DivideUnits<Basis, U, V>, NO_PREFIX_ALLOWED> {
       return this.over(other)
     }
 
     public div<V extends Unit<Basis>>(
       other: GenericMeasure<N, Basis, V, AllowedPrefixes>,
-    ): GenericMeasure<N, Basis, DivideUnits<Basis, U, V>, AllowedPrefixes> {
+    ): GenericMeasure<N, Basis, DivideUnits<Basis, U, V>, NO_PREFIX_ALLOWED> {
       return this.over(other)
     }
 
-    public squared(): GenericMeasure<N, Basis, SquareUnit<Basis, U>, AllowedPrefixes> {
+    public squared(): GenericMeasure<N, Basis, SquareUnit<Basis, U>, NO_PREFIX_ALLOWED> {
       return this.pow(2)
     }
 
-    public cubed(): GenericMeasure<N, Basis, CubeUnit<Basis, U>, AllowedPrefixes> {
+    public cubed(): GenericMeasure<N, Basis, CubeUnit<Basis, U>, NO_PREFIX_ALLOWED> {
       return this.pow(3)
     }
 
-    public inverse(): GenericMeasure<N, Basis, ReciprocalUnit<Basis, U>, AllowedPrefixes> {
+    public inverse(): GenericMeasure<N, Basis, ReciprocalUnit<Basis, U>, NO_PREFIX_ALLOWED> {
       return this.reciprocal()
     }
     public unsafeMap<V extends Unit<Basis>>(
@@ -225,7 +230,7 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
         this.namePlural,
         this.symbol,
         this.allowedPrefixes,
-      )
+      ) as unknown as GenericMeasure<N, Basis, V, AllowedPrefixes>
     }
 
     // Comparisons
@@ -258,7 +263,7 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
       return this.compare(other) > 0
     }
 
-    public withIdentifiers<NewAllowedPrefixes extends PrefixMask>(
+    public withIdentifiers<NewAllowedPrefixes extends PrefixMask = AllowedPrefixes>(
       nameSingular: string,
       namePlural: string,
       symbol: string,
@@ -271,8 +276,8 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
         nameSingular,
         namePlural,
         symbol,
-        allowedPrefixes,
-      )
+        allowedPrefixes as NewAllowedPrefixes,
+      ) as unknown as GenericMeasure<N, Basis, U, NewAllowedPrefixes>
     }
 
     public clone(): GenericMeasure<N, Basis, U, AllowedPrefixes> {
@@ -284,7 +289,7 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
         this.namePlural,
         this.symbol,
         this.allowedPrefixes,
-      )
+      ) as unknown as GenericMeasure<N, Basis, U, AllowedPrefixes>
     }
 
     public superposition(
@@ -305,7 +310,7 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
         this.constant, // this is the only operation that carries over the constant
       )
 
-      return su
+      return su as unknown as GenericMeasure<N, Basis, U, AllowedPrefixes>
     }
 
     // Formatting
@@ -621,7 +626,7 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
         allowedPrefixes ?? {},
         undefined,
         constant,
-      ),
+      ) as any,
     isMeasure: (value): value is GenericMeasure<N, any, any, any> => value instanceof Measure,
   }
 }

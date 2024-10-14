@@ -1,6 +1,5 @@
 import { Measure } from "../measure/numberMeasure"
-import { meters, seconds } from "./base"
-import { grams } from "./common"
+import { meters, seconds, grams } from "./base"
 import { milli, nano, pascals } from "./metric"
 import { Area, Length, Mass, Pressure, Velocity, Volume } from "./quantities"
 
