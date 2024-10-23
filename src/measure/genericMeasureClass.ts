@@ -330,8 +330,9 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
           return formatter.prefix(this.operation.measure.format(plural, formatter, root ?? thisGen), this.operation)
         }
         case "times": {
+          // The left hand side loses its plurality
           return formatter.times(
-            this.operation.left.format(plural, formatter, root ?? thisGen),
+            this.operation.left.format(false, formatter, root ?? thisGen),
             this.operation.right.format(plural, formatter, root ?? thisGen),
           )
         }
