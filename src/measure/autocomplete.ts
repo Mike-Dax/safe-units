@@ -89,23 +89,32 @@ function recursivelyParse(
   // Match on measures, spawning new partials
   const measureMatches = getMeasureMatches(tape.leftovers)
 
-  for (const measureMatch of measureMatches) {
-    let measure = measureMatch.match
+  skipMeasure: for (const measureMatch of measureMatches) {
+    const measure = measureMatch.match
 
-    // Apply the pre-loaded prefix
+    // Don't duplicate measures within a tape
+    for (const partial of tape.partials) {
+      if (partial.measure === measure) {
+        continue skipMeasure
+      }
+    }
+
+    let prefix: PrefixFn<any, any> | undefined = undefined
+
+    // Store the pre-loaded prefix if it exists and matches
     if (tape.nextPrefix) {
       if (!tape.nextPrefix.canApply(measure)) {
-        // If this prefix can't apply to this measure, skip it
+        // If the prefix can't apply to this measure, skip the measure
         continue
       }
 
-      measure = tape.nextPrefix(measure)
+      prefix = tape.nextPrefix
     }
 
     branchedTapes.push(
       ...recursivelyParse(
         {
-          partials: [...tape.partials, { measure }], // spawn a new partial
+          partials: [...tape.partials, { measure, prefix }], // spawn a new partial
           score: tape.score * measureMatch.score,
           leftovers: measureMatch.leftovers,
           nextPrefix: null,
@@ -364,6 +373,9 @@ export function createAutoCompleter(
 
       const levelOptions = recursivelyParse(initialTape, getMeasureMatches, getPrefixFnMatches)
 
+      // Split on whitespace
+      const whitespaceOptions = unparsedLevel.split(/\s+/)
+
       levels.push(levelOptions)
     }
 
@@ -426,3 +438,10 @@ const generateCombinations = (
 
 // Superposition ° for deg, degrees
 // Superposition Δ for delta
+
+function stringifyUnit(measure: Measure<any, any, any>) {
+  const candidatePluralName = measure.format(true, nameFormatter)
+  const candidateSymbol = measure.format(true, symbolFormatter)
+
+  return `${candidatePluralName} (${candidateSymbol})`
+}
