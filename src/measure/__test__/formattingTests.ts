@@ -5,6 +5,10 @@ const ALLOW_SI_PREFIX = {
   PREFIX_SI: true,
 } as const
 
+const DISALLOW_PREFIXES = {
+  PREFIX_SI: false,
+} as const
+
 const unitSystem = UnitSystem.from({
   length: "m",
   mass: "g",
@@ -12,20 +16,24 @@ const unitSystem = UnitSystem.from({
   temperature: "K",
 })
 
-const milli = Measure.prefix("milli", "m", 1e-3, ALLOW_SI_PREFIX)
 const kilo = Measure.prefix("kilo", "k", 1e3, ALLOW_SI_PREFIX)
+const centi = Measure.prefix("centi", "c", 0.01, ALLOW_SI_PREFIX)
+const milli = Measure.prefix("milli", "m", 1e-3, ALLOW_SI_PREFIX)
+const micro = Measure.prefix("micro", "µ", 1e-6, ALLOW_SI_PREFIX)
 
 const meters = Measure.dimension(unitSystem, "length", "meter", "meters", "m", ALLOW_SI_PREFIX)
 const gram = Measure.dimension(unitSystem, "mass", "gram", "grams", "g", ALLOW_SI_PREFIX)
-const feet = Measure.from(0.3048, meters, "foot", "feet", "ft")
-const inches = Measure.from(1 / 12, feet, "inch", "inches", "in")
+const feet = Measure.from(0.3048, meters, "foot", "feet", "ft", DISALLOW_PREFIXES)
+const inches = Measure.from(1 / 12, feet, "inch", "inches", "in", DISALLOW_PREFIXES)
 
-const seconds = Measure.dimension(unitSystem, "time", "second", "seconds", "s")
-const minutes = Measure.from(60, seconds, "minute", "minutes", "m")
-const hours = Measure.from(60, minutes, "hour", "hours", "hr")
+const seconds = Measure.dimension(unitSystem, "time", "second", "seconds", "s", ALLOW_SI_PREFIX)
+const minutes = Measure.from(60, seconds, "minute", "minutes", "m", DISALLOW_PREFIXES)
+const hours = Measure.from(60, minutes, "hour", "hours", "hr", DISALLOW_PREFIXES)
 
-const newtons = kilo(gram).times(meters.per(seconds.squared())).withIdentifiers("newton", "newtons", "N")
-const joules = newtons.times(meters).withIdentifiers("joule", "joules", "J")
+const newtons = kilo(gram)
+  .times(meters.per(seconds.squared()))
+  .withIdentifiers("newton", "newtons", "N", ALLOW_SI_PREFIX)
+const joules = newtons.times(meters).withIdentifiers("joule", "joules", "J", ALLOW_SI_PREFIX)
 
 const kelvin = Measure.dimension(
   unitSystem, //
@@ -369,11 +377,6 @@ describe("Complex Formatting helpers", () => {
   })
 
   it("auto-prefixing formatter for meters", () => {
-    const kilo = Measure.prefix("kilo", "k", 1e3, ALLOW_SI_PREFIX)
-    const centi = Measure.prefix("centi", "c", 0.01, ALLOW_SI_PREFIX)
-    const milli = Measure.prefix("milli", "m", 1e-3, ALLOW_SI_PREFIX)
-    const micro = Measure.prefix("micro", "µ", 1e-6, ALLOW_SI_PREFIX)
-
     const autoPrefixer = meters.createDynamicFormatter(
       [
         meters, //

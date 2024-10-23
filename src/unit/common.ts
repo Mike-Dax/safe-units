@@ -1,45 +1,46 @@
 import { Measure } from "../measure/numberMeasure"
+import { NO_PREFIX_ALLOWED } from "../measure/prefixMask"
 import { kelvin, grams, meters, seconds } from "./base"
-import { Area, Length, Mass, Temperature, Time } from "./quantities"
 
 // Time
-export const minutes: Time = Measure.from(60, seconds, "minute", "minutes", "min")
-export const hours: Time = Measure.from(60, minutes, "hour", "hours", "hr")
-export const days: Time = Measure.from(24, hours, "day", "days", "d")
+export const minutes = Measure.from(60, seconds, "minute", "minutes", "min", NO_PREFIX_ALLOWED)
+export const hours = Measure.from(60, minutes, "hour", "hours", "hr", NO_PREFIX_ALLOWED)
+export const days = Measure.from(24, hours, "day", "days", "d", NO_PREFIX_ALLOWED)
 
 // Length
-export const inches: Length = Measure.from(0.0254, meters, "inch", "inches", "in")
-export const thous: Length = Measure.from(0.001, inches, "thou", "thous", "th")
-export const feet: Length = Measure.from(12, inches, "foot", "feet", "ft")
-export const yards: Length = Measure.from(3, feet, "yard", "yards", "yd")
-export const chains: Length = Measure.from(22, yards, "chain", "chains", "ch")
-export const furlongs: Length = Measure.from(10, chains, "furlong", "furlongs", "fur")
-export const miles: Length = Measure.from(8, furlongs, "mile", "miles", "mi")
-export const leagues: Length = Measure.from(3, miles, "league", "leagues", "lea")
-export const fathoms: Length = Measure.from(1.852, meters, "fathom", "fathoms", "ftm")
-export const cables: Length = Measure.from(100, fathoms, "cable", "cables", "cable")
-export const nauticalMiles: Length = Measure.from(10, cables, "nautical mile", "nautical miles", "nmi")
-export const links: Length = Measure.from(7.92, inches, "link", "links", "li")
-export const rods: Length = Measure.from(25, links, "rod", "rods", "rd")
+export const inches = Measure.from(0.0254, meters, "inch", "inches", "in", NO_PREFIX_ALLOWED)
+export const thous = Measure.from(0.001, inches, "thou", "thous", "th", NO_PREFIX_ALLOWED)
+export const feet = Measure.from(12, inches, "foot", "feet", "ft", NO_PREFIX_ALLOWED)
+export const yards = Measure.from(3, feet, "yard", "yards", "yd", NO_PREFIX_ALLOWED)
+export const chains = Measure.from(22, yards, "chain", "chains", "ch", NO_PREFIX_ALLOWED)
+export const furlongs = Measure.from(10, chains, "furlong", "furlongs", "fur", NO_PREFIX_ALLOWED)
+export const miles = Measure.from(8, furlongs, "mile", "miles", "mi", NO_PREFIX_ALLOWED)
+export const leagues = Measure.from(3, miles, "league", "leagues", "lea", NO_PREFIX_ALLOWED)
+export const fathoms = Measure.from(1.852, meters, "fathom", "fathoms", "ftm", NO_PREFIX_ALLOWED)
+export const cables = Measure.from(100, fathoms, "cable", "cables", "cable", NO_PREFIX_ALLOWED)
+export const nauticalMiles = Measure.from(10, cables, "nautical mile", "nautical miles", "nmi", NO_PREFIX_ALLOWED)
+export const links = Measure.from(7.92, inches, "link", "links", "li", NO_PREFIX_ALLOWED)
+export const rods = Measure.from(25, links, "rod", "rods", "rd", NO_PREFIX_ALLOWED)
 
 // Area
-export const perches: Area = rods.squared().withIdentifiers("perch", "perches", "perch")
-export const roods: Area = furlongs.times(rods).withIdentifiers("rood", "roods", "rood")
-export const acres: Area = furlongs.times(chains).withIdentifiers("acre", "acres", "acre")
+export const perches = rods.squared().withIdentifiers("perch", "perches", "perch", NO_PREFIX_ALLOWED)
+export const roods = furlongs.times(rods).withIdentifiers("rood", "roods", "rood", NO_PREFIX_ALLOWED)
+export const acres = furlongs.times(chains).withIdentifiers("acre", "acres", "acre", NO_PREFIX_ALLOWED)
 
 // Mass
-export const pounds: Mass = Measure.from(453.592_37, grams, "pound", "pounds", "lb")
-export const grains: Mass = Measure.from(1 / 7000, pounds, "grain", "grains", "gr")
-export const ounces: Mass = Measure.from(1 / 16, pounds, "ounce", "ounces", "oz")
+export const pounds = Measure.from(453.592_37, grams, "pound", "pounds", "lb", NO_PREFIX_ALLOWED)
+export const grains = Measure.from(1 / 7000, pounds, "grain", "grains", "gr", NO_PREFIX_ALLOWED)
+export const ounces = Measure.from(1 / 16, pounds, "ounce", "ounces", "oz", NO_PREFIX_ALLOWED)
 
 // Temperature
-export const celsius: Temperature = Measure.offsetFrom(
+export const celsius = Measure.offsetFrom(
   kelvin, //
   1,
   273.15,
   "degree Celsius",
   "degrees Celsius",
   "°C",
+  NO_PREFIX_ALLOWED,
 ).superposition((root, leaf) => {
   if (root === leaf) {
     return Measure.offsetFrom(
@@ -49,6 +50,7 @@ export const celsius: Temperature = Measure.offsetFrom(
       "degree Celsius",
       "degrees Celsius",
       "°C",
+      NO_PREFIX_ALLOWED,
     )
   } else {
     return Measure.from(
@@ -57,17 +59,19 @@ export const celsius: Temperature = Measure.offsetFrom(
       "degree Celsius difference",
       "degrees Celsius difference",
       "Δ°C",
+      NO_PREFIX_ALLOWED,
     )
   }
 })
 
-export const fahrenheit: Temperature = Measure.offsetFrom(
+export const fahrenheit = Measure.offsetFrom(
   kelvin, //
   5 / 9,
   459.67,
   "degree Fahrenheit",
   "degrees Fahrenheit",
   "°F",
+  NO_PREFIX_ALLOWED,
 ).superposition((root, leaf) => {
   if (root === leaf) {
     return Measure.offsetFrom(
@@ -77,6 +81,7 @@ export const fahrenheit: Temperature = Measure.offsetFrom(
       "degree Fahrenheit",
       "degrees Fahrenheit",
       "°F",
+      NO_PREFIX_ALLOWED,
     )
   } else {
     return Measure.from(
@@ -85,6 +90,7 @@ export const fahrenheit: Temperature = Measure.offsetFrom(
       "degree Fahrenheit difference",
       "degrees Fahrenheit difference",
       "Δ°F",
+      NO_PREFIX_ALLOWED,
     )
   }
 })

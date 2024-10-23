@@ -42,24 +42,46 @@ export const atto = Measure.prefix("atto", "a", 1e-18, ALLOW_SI_SUBMULTIPLE_PREF
 export const zepto = Measure.prefix("zepto", "z", 1e-21, ALLOW_SI_SUBMULTIPLE_PREFIX)
 export const yocto = Measure.prefix("yocto", "y", 1e-24, ALLOW_SI_SUBMULTIPLE_PREFIX)
 
-export const hertz: Quantity.Frequency = seconds.inverse().withIdentifiers("hertz", "hertz", "Hz")
+export const hertz: Quantity.Frequency = seconds.inverse().withIdentifiers("hertz", "hertz", "Hz", ALLOW_SI_PREFIX)
 export const newtons: Quantity.Force = kilo(grams)
   .times(meters.per(seconds.squared()))
-  .withIdentifiers("newton", "newtons", "N")
-export const pascals: Quantity.Pressure = newtons.per(meters.squared()).withIdentifiers("pascal", "pascals", "Pa")
-export const joules: Quantity.Energy = newtons.times(meters).withIdentifiers("joule", "joules", "J")
-export const watts: Quantity.Power = joules.per(seconds).withIdentifiers("watt", "watts", "W")
-export const volts: Quantity.Voltage = watts.per(amperes).withIdentifiers("volt", "volts", "V")
-export const coulombs: Quantity.ElectricCharge = amperes.times(seconds).withIdentifiers("coulomb", "coulombs", "C")
-export const farads: Quantity.ElectricalCapacitance = coulombs.per(volts).withIdentifiers("farad", "farads", "F")
-export const ohms: Quantity.ElectricalResistance = volts.per(amperes).withIdentifiers("ohm", "ohms", "Ω")
-export const siemens: Quantity.ElectricalConductance = amperes.per(volts).withIdentifiers("siemens", "siemens", "S")
-export const henrys: Quantity.ElectricalInductance = ohms.times(seconds).withIdentifiers("henry", "henries", "H")
-export const webers: Quantity.MagneticFlux = joules.per(amperes).withIdentifiers("weber", "webers", "Wb")
+  .withIdentifiers("newton", "newtons", "N", ALLOW_SI_PREFIX)
+export const pascals: Quantity.Pressure = newtons
+  .per(meters.squared())
+  .withIdentifiers("pascal", "pascals", "Pa", ALLOW_SI_PREFIX)
+export const joules: Quantity.Energy = newtons.times(meters).withIdentifiers("joule", "joules", "J", ALLOW_SI_PREFIX)
+export const watts: Quantity.Power = joules.per(seconds).withIdentifiers("watt", "watts", "W", ALLOW_SI_PREFIX)
+export const volts: Quantity.Voltage = watts.per(amperes).withIdentifiers("volt", "volts", "V", ALLOW_SI_PREFIX)
+export const coulombs: Quantity.ElectricCharge = amperes
+  .times(seconds)
+  .withIdentifiers("coulomb", "coulombs", "C", ALLOW_SI_PREFIX)
+export const farads: Quantity.ElectricalCapacitance = coulombs
+  .per(volts)
+  .withIdentifiers("farad", "farads", "F", ALLOW_SI_PREFIX)
+export const ohms: Quantity.ElectricalResistance = volts
+  .per(amperes)
+  .withIdentifiers("ohm", "ohms", "Ω", ALLOW_SI_PREFIX)
+export const siemens: Quantity.ElectricalConductance = amperes
+  .per(volts)
+  .withIdentifiers("siemens", "siemens", "S", ALLOW_SI_PREFIX)
+export const henrys: Quantity.ElectricalInductance = ohms
+  .times(seconds)
+  .withIdentifiers("henry", "henries", "H", ALLOW_SI_PREFIX)
+export const webers: Quantity.MagneticFlux = joules
+  .per(amperes)
+  .withIdentifiers("weber", "webers", "Wb", ALLOW_SI_PREFIX)
 export const teslas: Quantity.MagneticFluxDensity = volts
   .times(seconds.per(meters.squared()))
-  .withIdentifiers("tesla", "teslas", "T")
-export const sieverts: Quantity.RadiationDose = joules.per(kilo(grams)).withIdentifiers("sievert", "sieverts", "Sv")
-export const katals: Quantity.CatalyticActivity = moles.per(seconds).withIdentifiers("katal", "katals", "kat")
-export const lumens: Quantity.LuminousFlux = candelas.times(steradians).withIdentifiers("lumen", "lumens", "lm")
-export const luxes: Quantity.Illuminance = lumens.per(meters.squared()).withIdentifiers("lux", "luxes", "lx")
+  .withIdentifiers("tesla", "teslas", "T", ALLOW_SI_PREFIX)
+export const sieverts: Quantity.RadiationDose = joules
+  .per(kilo(grams))
+  .withIdentifiers("sievert", "sieverts", "Sv", ALLOW_SI_PREFIX)
+export const katals: Quantity.CatalyticActivity = moles
+  .per(seconds)
+  .withIdentifiers("katal", "katals", "kat", ALLOW_SI_PREFIX)
+export const lumens: Quantity.LuminousFlux = candelas
+  .times(steradians)
+  .withIdentifiers("lumen", "lumens", "lm", ALLOW_SI_PREFIX)
+export const luxes: Quantity.Illuminance = lumens
+  .per(meters.squared())
+  .withIdentifiers("lux", "luxes", "lx", ALLOW_SI_PREFIX)

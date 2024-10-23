@@ -1,5 +1,6 @@
 import { GenericMeasure } from "../measure/genericMeasure"
 import { Measure } from "../measure/numberMeasure"
+import { NO_PREFIX_ALLOWED } from "../measure/prefixMask"
 import { DimensionlessUnit } from "../measure/unitTypeArithmetic"
 import { SIUnitSystem, radians } from "./base"
 import { Length, PlaneAngle } from "./quantities"
@@ -53,15 +54,15 @@ export const tan = wrapTrigFn(Math.tan)
  * @returns an angle
  */
 export function atan2(y: Length, x: Length): PlaneAngle {
-  return Measure.from(Math.atan2(y.coefficient, x.coefficient), radians)
+  return Measure.from(Math.atan2(y.coefficient, x.coefficient), radians, "", "", "")
 }
 
-type Dimensionless = GenericMeasure<number, SIUnitSystem, DimensionlessUnit<SIUnitSystem>>
+type Dimensionless = GenericMeasure<number, SIUnitSystem, DimensionlessUnit<SIUnitSystem>, NO_PREFIX_ALLOWED>
 
 function wrapTrigFn(f: (x: number) => number): (angle: PlaneAngle) => Dimensionless {
   return angle => Measure.dimensionless(SIUnitSystem, f(angle.coefficient))
 }
 
 function wrapInverseTrigFn(f: (x: number) => number): (angle: Dimensionless) => PlaneAngle {
-  return angle => Measure.from(f(angle.value), radians)
+  return angle => Measure.from(f(angle.coefficient), radians, "", "", "")
 }

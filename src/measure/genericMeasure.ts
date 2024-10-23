@@ -396,7 +396,7 @@ export interface GenericMeasure<N, Basis, U extends Unit<Basis>, AllowedPrefixes
    * `valueFormatter` and `measureFormatter`.
    */
   createDynamicFormatter<R, PR, T, O, PO, RE, PA>(
-    measures: GenericMeasure<N, Basis, U, AllowedPrefixes>[],
+    measures: GenericMeasure<N, Basis, U, any>[],
     valueFormat: ValueFormatOptions<N>,
     measureFormatter: MeasureFormatter<R, PR, T, O, PO, RE, PA>,
   ): (value: N) => {
@@ -421,7 +421,7 @@ export interface GenericMeasure<N, Basis, U extends Unit<Basis>, AllowedPrefixes
    * eg 3664 seconds = 1 hour, 1 minute, 4 seconds
    */
   createMultiUnitFormatter<R, PR, T, O, PO, RE, PA>(
-    measures: GenericMeasure<N, Basis, U, AllowedPrefixes>[],
+    measures: GenericMeasure<N, Basis, U, any>[],
     valueFormat: ValueFormatOptions<N>,
     measureFormatter: MeasureFormatter<R, PR, T, O, PO, RE, PA>,
     keepZeros?: boolean,

@@ -450,7 +450,7 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
     // }
 
     public createDynamicFormatter<R, PR, T, O, PO, RE, PA>(
-      measures: GenericMeasure<N, Basis, U, AllowedPrefixes>[],
+      measures: GenericMeasure<N, Basis, U, any>[],
       valueFormat: ValueFormatOptions<N>,
       measureFormatter: MeasureFormatter<R, PR, T, O, PO, RE, PA>,
     ): (value: N) => {
@@ -504,7 +504,7 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
     }
 
     public createMultiUnitFormatter<R, PR, T, O, PO, RE, PA>(
-      measures: GenericMeasure<N, Basis, U, AllowedPrefixes>[],
+      measures: GenericMeasure<N, Basis, U, any>[],
       valueFormat: ValueFormatOptions<N>,
       measureFormatter: MeasureFormatter<R, PR, T, O, PO, RE, PA>,
       keepZeros: boolean = false,
@@ -615,7 +615,7 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
   }
 
   return {
-    createMeasure: (coefficient, unit, unitSystem, nameSingular, namePlural, symbol, allowedPrefixes, constant) =>
+    createMeasure: (coefficient, unit, unitSystem, nameSingular, namePlural, symbol, allowedPrefixes, constant?) =>
       new Measure(
         coefficient,
         unit,
@@ -626,7 +626,7 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
         allowedPrefixes ?? {},
         undefined,
         constant,
-      ) as any,
+      ) as GenericMeasure<N, any, any, any>,
     isMeasure: (value): value is GenericMeasure<N, any, any, any> => value instanceof Measure,
   }
 }
