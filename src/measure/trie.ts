@@ -16,107 +16,133 @@ export class Trie<R extends { text: string[] }> {
     const results: Result<R>[] = []
 
     for (const item of this.contents) {
-      const res = this.matchOne(query, item, maxDistance)
-      if (res) {
-        results.push(res)
-      }
+      this.matchOne(query, item, maxDistance, results)
     }
 
     return results
   }
 
-  private matchOne(query: string, potential: R, maxDistance: number): Result<R> | null {
-    for (const potentialMatch of potential.text) {
+  private matchOne(query: string, potential: R, maxDistance: number, results: Result<R>[]): void {
+    nextMatch: for (const potentialMatch of potential.text) {
       // Perfect prefix match
       if (query.startsWith(potentialMatch)) {
         // console.log(
-        //   `${testingMeasure ? "measure" : "prefix"} ${testingName ? "name" : "symbol"}: perfect prefix match ${rest} to ${potentialMatch} with score ${perfectMatchScore}`
-        // );
-        return {
-          score: this.perfectMatchScore,
+        //   `query ${query} starts with ${potentialMatch}`,
+        //   (potentialMatch.length / query.length) * this.perfectMatchScore,
+        // )
+
+        results.push({
+          score: (potentialMatch.length / query.length) * this.perfectMatchScore,
           match: query.slice(0, potentialMatch.length),
           result: potential,
-        }
+        })
       }
 
       // Partial prefix match
       for (let i = potentialMatch.length; i > 0; i--) {
         if (query.startsWith(potentialMatch.slice(0, i))) {
           const score = mapLinear(i, 0, potentialMatch.length, 1, this.partialMatchScore)
-          // console.log(
-          //   `${testingMeasure ? "measure" : "prefix"} ${testingName ? "name" : "symbol"}: partial prefix match ${rest} to ${potentialMatch} with subset ${potentialMatch.slice(0, i)} with score ${score}`
-          // );
 
-          return { score, match: query.slice(0, i), result: potential }
+          //   console.log(`query ${query} starts with ${potentialMatch.slice(0, i)}`, score)
+
+          results.push({
+            score,
+            match: query.slice(0, i),
+            result: potential,
+          })
+
+          break
         }
       }
 
       // Compare the levenshtein distance of the entire rest, and if it's low, allow that
-      if (maxDistance > 0) {
-        const levenshteinDistance = levenshtein(query, potentialMatch)
+      if (query.length > maxDistance && maxDistance > 0) {
+        const levenshteinDistance = levenshtein(query, potentialMatch, maxDistance)
 
         if (levenshteinDistance <= maxDistance) {
-          // console.log(
-          //   `${testingMeasure ? "measure" : "prefix"} ${testingName ? "name" : "symbol"}: levenshteinDistance ${rest} to ${potentialMatch} is ${levenshteinDistance}`
-          // );
+          //   console.log(`levenshtein match: ${query} is ${levenshteinDistance} off ${potentialMatch}`)
+
           // Remap the distance to a score between 1 and the partialMatchScore
           const score = mapLinear(levenshteinDistance, maxDistance, 0, 0, this.partialMatchScore)
 
           // Consume the rest of the string
-          return { score, match: query, result: potential }
+          results.push({
+            score,
+            match: query,
+            result: potential,
+          })
+
+          continue nextMatch
         }
       }
     }
-
-    return null
   }
 }
 
 type Result<R> = { score: number; match: string; result: R }
 
-function levenshtein(
-  a: string,
-  b: string,
-  insertCost: number = 3,
-  deleteCost: number = 2,
-  substituteCost: number = 1,
-): number {
-  const an = a ? a.length : 0
-  const bn = b ? b.length : 0
-
-  if (an === 0) {
-    return bn * insertCost
-  }
-  if (bn === 0) {
-    return an * deleteCost
+function levenshtein(str1: string, str2: string, maxDistance: number): number {
+  // Early exit if the length difference exceeds maxDistance
+  if (Math.abs(str1.length - str2.length) > maxDistance) {
+    return Infinity
   }
 
-  const matrix = new Array<number[]>(bn + 1)
-  for (let i = 0; i <= bn; ++i) {
-    const row = (matrix[i] = new Array<number>(an + 1))
-    row[0] = i * insertCost
+  // Create matrix of size (str1.length + 1) x (str2.length + 1)
+  const matrix: number[][] = []
+
+  // Initialize first row
+  for (let i = 0; i <= str1.length; i++) {
+    matrix[i] = [i]
   }
 
-  const firstRow = matrix[0]
-  for (let j = 1; j <= an; ++j) {
-    firstRow[j] = j * deleteCost
+  // Initialize first column
+  for (let j = 0; j <= str2.length; j++) {
+    matrix[0][j] = j
   }
 
-  for (let i = 1; i <= bn; ++i) {
-    for (let j = 1; j <= an; ++j) {
-      if (b.charAt(i - 1) === a.charAt(j - 1)) {
-        matrix[i][j] = matrix[i - 1][j - 1]
-      } else {
-        matrix[i][j] = Math.min(
-          matrix[i - 1][j - 1] + substituteCost, // substitution
-          matrix[i][j - 1] + insertCost, // insertion
-          matrix[i - 1][j] + deleteCost, // deletion
-        )
+  // Fill in the rest of the matrix
+  for (let i = 1; i <= str1.length; i++) {
+    let minInRow = Infinity
+    for (let j = 1; j <= str2.length; j++) {
+      // Check for exact match or case difference
+      let cost = 1
+      if (str1[i - 1] === str2[j - 1]) {
+        cost = 0
+      } else if (str1[i - 1].toLowerCase() === str2[j - 1].toLowerCase()) {
+        cost = 0.25 // Lower cost for case difference
       }
+
+      let minCost = Math.min(
+        matrix[i - 1][j] + 1, // deletion
+        matrix[i][j - 1] + 1, // insertion
+        matrix[i - 1][j - 1] + cost, // substitution or case switch
+      )
+
+      // Check for transposition (if we have at least 2 characters to compare)
+      if (i > 1 && j > 1) {
+        // Check both exact transposition and case-insensitive transposition
+        const isTransposition =
+          (str1[i - 1] === str2[j - 2] && str1[i - 2] === str2[j - 1]) ||
+          (str1[i - 1].toLowerCase() === str2[j - 2].toLowerCase() &&
+            str1[i - 2].toLowerCase() === str2[j - 1].toLowerCase())
+
+        if (isTransposition) {
+          // Cost of 0.5 for transposition instead of 2 separate operations
+          minCost = Math.min(minCost, matrix[i - 2][j - 2] + 0.5)
+        }
+      }
+
+      matrix[i][j] = minCost
+      minInRow = Math.min(minInRow, minCost)
+    }
+
+    // Early exit if entire row exceeds maxDistance
+    if (minInRow > maxDistance) {
+      return Infinity
     }
   }
 
-  return matrix[bn][an]
+  return matrix[str1.length][str2.length]
 }
 
 function mapLinear(x: number, in_min: number, in_max: number, out_min: number, out_max: number) {

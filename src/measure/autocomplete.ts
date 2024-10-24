@@ -10,12 +10,14 @@ const PERFECT_PREFIX_NAME_MATCH = 10
 const PERFECT_MEASURE_SYMBOL_MATCH = 5
 const PERFECT_MEASURE_NAME_MATCH = 10
 const PERFECT_MEASURE_ALIAS_MATCH = 3
+const PERFECT_EXPONENT_WORD_MATCH = 2
 
 const PARTIAL_PREFIX_SYMBOL_MATCH = 1.5
 const PARTIAL_PREFIX_NAME_MATCH = 2
 const PARTIAL_MEASURE_SYMBOL_MATCH = 1.8
 const PARTIAL_MEASURE_NAME_MATCH = 2
 const PARTIAL_MEASURE_ALIAS_MATCH = 1.9
+const PARTIAL_EXPONENT_WORD_MATCH = 1.7
 
 const MAX_LEVENSHTEIN_DISTANCE = 3
 
@@ -29,25 +31,21 @@ export type MeasureAlias<N, Basis, U extends Unit<Basis>, AllowedPrefixes extend
   measure: GenericMeasure<N, Basis, U, AllowedPrefixes>
 }
 
-type Partial = {
-  measure: GenericMeasure<any, any, any, any>
-  prefix?: PrefixFn<any, any>
-  exponent?: number
-}
-
 export type Result = {
   measure: GenericMeasure<any, any, any, any>
   score: number
 }
 
 /**
- *
+ * Build a singular non-compound measure, with an optional prefix and exponent
  */
-type Tape = {
-  partials: Partial[]
+type Partial = {
   score: number
   leftovers: string
-  nextPrefix: PrefixFn<any, any> | null
+
+  prefix?: PrefixFn<any, any>
+  measure?: GenericMeasure<any, any, any, any>
+  exponent?: number
 }
 
 const nameFormatter = Measure.createMeasureFormatter({
@@ -60,197 +58,125 @@ const nameFormatter = Measure.createMeasureFormatter({
 
 const symbolFormatter = Measure.createMeasureFormatter()
 
+type PartialSuperposition = Partial[]
+
 /**
- *
- * @param tape
- * @param getMeasureMatches
- * @param getPrefixFnMatches
- * @returns
+ * Recursively parse an empty partial into a series of partial options.
  */
-function recursivelyParse(
-  // Contains the partials so far
-  tape: Tape,
+function recursivelyParsePartial(
+  partial: Partial,
   getMeasureMatches: (str: string) => MeasureMatch[],
   getPrefixFnMatches: (str: string) => PrefixFnMatch[],
-): Tape[] {
+  depth = 0,
+): PartialSuperposition {
   // Terminate the recursion once the leftovers are empty
-  if (tape.leftovers === "") {
-    // If this tape ended on a prefix, it's invalid, return nothing
-    if (tape.nextPrefix) {
-      return []
-    }
-
-    return [tape]
+  if (partial.leftovers === "") {
+    return [partial]
   }
 
-  // Try to match at this level, branching our breadth first search into separate tapes
-  const branchedTapes: Tape[] = []
+  // console.log(`${"  ".repeat(depth)}parsing ${stringifyPartial(partial)} at depth ${depth}`)
 
-  // Match on measures, spawning new partials
-  const measureMatches = getMeasureMatches(tape.leftovers)
+  // Try to match at this level, branching into a breadth first search
+  const branchedPartials: PartialSuperposition = []
 
-  skipMeasure: for (const measureMatch of measureMatches) {
-    const measure = measureMatch.match
+  // Match on measures
+  if (!partial.measure) {
+    const measureMatches = getMeasureMatches(partial.leftovers)
 
-    // Don't duplicate measures within a tape
-    for (const partial of tape.partials) {
-      if (partial.measure === measure) {
-        continue skipMeasure
-      }
+    for (const measureMatch of measureMatches) {
+      const measure = measureMatch.match
+
+      branchedPartials.push(
+        ...recursivelyParsePartial(
+          {
+            score: partial.score * measureMatch.score,
+            leftovers: measureMatch.leftovers,
+            prefix: partial.prefix,
+            measure,
+            // exponent: partial.exponent, // won't exist
+          },
+          getMeasureMatches,
+          getPrefixFnMatches,
+          depth + 1,
+        ),
+      )
     }
-
-    let prefix: PrefixFn<any, any> | undefined = undefined
-
-    // Store the pre-loaded prefix if it exists and matches
-    if (tape.nextPrefix) {
-      if (!tape.nextPrefix.canApply(measure)) {
-        // If the prefix can't apply to this measure, skip the measure
-        continue
-      }
-
-      prefix = tape.nextPrefix
-    }
-
-    branchedTapes.push(
-      ...recursivelyParse(
-        {
-          partials: [...tape.partials, { measure, prefix }], // spawn a new partial
-          score: tape.score * measureMatch.score,
-          leftovers: measureMatch.leftovers,
-          nextPrefix: null,
-        },
-        getMeasureMatches,
-        getPrefixFnMatches,
-      ),
-    )
   }
 
-  // Match on prefixes, applied to the next measure
-  if (!tape.nextPrefix) {
-    const prefixMatches = getPrefixFnMatches(tape.leftovers)
+  // Match on prefixes, prefixes must precede measures
+  if (!partial.prefix && !partial.measure) {
+    const prefixMatches = getPrefixFnMatches(partial.leftovers)
 
     for (const prefixMatch of prefixMatches) {
-      branchedTapes.push(
-        ...recursivelyParse(
+      branchedPartials.push(
+        ...recursivelyParsePartial(
           {
-            partials: [...tape.partials],
-            score: tape.score * prefixMatch.score,
+            score: partial.score * prefixMatch.score,
             leftovers: prefixMatch.leftovers,
-            nextPrefix: prefixMatch.prefix,
+            prefix: prefixMatch.prefix,
+            measure: partial.measure,
+            // exponent: partial.exponent, // won't exist
           },
           getMeasureMatches,
           getPrefixFnMatches,
+          depth + 1,
         ),
       )
     }
   }
 
-  const lastPartial = tape.partials[tape.partials.length - 1]
+  // Match on exponents
 
-  // Match on exponents, applied to the previous partial
-  if (lastPartial && !lastPartial.exponent) {
-    const exponentMatches = getExponentMatches(tape.leftovers)
+  const exponentMatches = getExponentMatches(partial.leftovers)
 
-    for (const exponentMatch of exponentMatches) {
-      const newPartials = [
-        ...tape.partials.slice(0, -1),
-        {
-          ...lastPartial,
-          exponent: exponentMatch.exponent,
-        },
-      ]
-
-      branchedTapes.push(
-        ...recursivelyParse(
+  for (const exponentMatch of exponentMatches) {
+    if (partial.measure) {
+      // Apply it directly if possible
+      branchedPartials.push(
+        ...recursivelyParsePartial(
           {
-            partials: newPartials,
-            score: tape.score * exponentMatch.score,
+            score: partial.score * exponentMatch.score,
             leftovers: exponentMatch.leftovers,
-            nextPrefix: null,
+            prefix: partial.prefix,
+            measure: partial.measure,
+            exponent: exponentMatch.exponent,
           },
           getMeasureMatches,
           getPrefixFnMatches,
+          depth + 1,
+        ),
+      )
+    } else {
+      // Do a post-applied branch
+      branchedPartials.push(
+        ...recursivelyParsePartial(
+          {
+            score: partial.score * exponentMatch.score,
+            leftovers: exponentMatch.leftovers,
+            prefix: undefined,
+            measure: undefined,
+            exponent: exponentMatch.exponent,
+          },
+          getMeasureMatches,
+          getPrefixFnMatches,
+          depth + 1,
         ),
       )
     }
   }
 
-  return branchedTapes
-}
+  // console.log(
+  //   `${"<-".repeat(depth)}parsed [${branchedPartials
+  //     .map(partial => {
+  //       const result = assemblePartial(partial)
+  //       if (!result) return null
+  //       return stringifyResult(result)
+  //     })
+  //     .filter(str => str !== null)
+  //     .join(", ")}]`,
+  // )
 
-function debugPrintTape(tape: Tape) {
-  const name = tapeToMeasure(tape)
-
-  if (name) {
-    return `${name.format(false, nameFormatter)} (${name.format(false, symbolFormatter)}) leftovers ${tape.leftovers} score ${Math.round(tape.score)}`
-  }
-
-  return null
-}
-
-/**
- * Convert a tape without leftovers into a Measure, or return null.
- */
-function tapeToMeasure(tape: Tape): GenericMeasure<any, any, any, any> | null {
-  if (tape.partials.length === 0 || tape.leftovers.trim() !== "") {
-    return null
-  }
-
-  let result = tape.partials[0].measure
-
-  for (let i = 0; i < tape.partials.length; i++) {
-    const partial = tape.partials[i]
-
-    if (partial.prefix) {
-      result = partial.prefix(result)
-    }
-
-    if (partial.exponent !== undefined) {
-      result = result.pow(partial.exponent)
-    }
-
-    if (i > 0) {
-      result = result.times(tape.partials[i].measure)
-    }
-  }
-
-  return result
-}
-
-/**
- * Combines a vertical slice of the combinatoral explosion into a singular result.
- */
-function combineOver(verticalSlice: Tape[]): Result | null {
-  if (verticalSlice.length === 0) {
-    return null
-  }
-
-  let result: GenericMeasure<any, any, any, any> | null = null
-  let score = 1
-
-  for (let i = 0; i < verticalSlice.length; i++) {
-    const measure = tapeToMeasure(verticalSlice[i])
-    if (measure === null) {
-      return null
-    }
-
-    if (i === 0) {
-      result = measure
-    } else {
-      result = result!.over(measure)
-    }
-
-    score *= verticalSlice[i].score
-  }
-
-  if (result === null) {
-    return null
-  }
-
-  return {
-    measure: result,
-    score: score,
-  }
+  return branchedPartials
 }
 
 type MeasureMatch = { match: GenericMeasure<any, any, any, any>; score: number; leftovers: string }
@@ -284,7 +210,7 @@ export function createAutoCompleter(
   )
 
   // Aliases are handled separately
-  const measureAliases = new Trie(aliases ?? [], PERFECT_MEASURE_SYMBOL_MATCH, PARTIAL_MEASURE_SYMBOL_MATCH)
+  const measureAliases = new Trie(aliases ?? [], PERFECT_MEASURE_ALIAS_MATCH, PARTIAL_MEASURE_ALIAS_MATCH)
 
   const measureSymbols = new Trie(
     measures.map(measure => ({ measure, text: [measure.format(false, symbolFormatter)] })),
@@ -314,45 +240,108 @@ export function createAutoCompleter(
     // Allow up to one case insensitivity
     const symbolResults = measureSymbols.match(str, 0.5)
 
-    // Combine results and calculate scores
-    const combinedResults = [...nameResults, ...aliasResults, ...symbolResults].map(result => {
-      const remainingStr = str.slice(result.match.length)
+    /*
+    // Deduplicate measures, use the highest scoring one when they have the same
+    const measureResultMap = new Map<GenericMeasure<any, any, any, any>, (typeof nameResults)[number]>()
 
-      return {
-        match: result.result.measure,
-        score: result.score,
-        leftovers: remainingStr, // Adding leftovers property to match PrefixFnMatch type
+    for (const result of [...nameResults, ...aliasResults, ...symbolResults]) {
+      if (measureResultMap.has(result.result.measure)) {
+        const cached = measureResultMap.get(result.result.measure)!
+
+        // pick the highest scoring result
+        if (result.score > cached.score) {
+          measureResultMap.set(result.result.measure, result)
+        }
+
+        continue
       }
-    })
+
+      measureResultMap.set(result.result.measure, result)
+    }
 
     // Sort results by score in descending order
-    combinedResults.sort((a, b) => b.score - a.score)
+    const combinedResults = [...measureResultMap.values()]
+      .sort((a, b) => b.score - a.score)
+      .map(result => ({
+        match: result.result.measure,
+        score: result.score,
+        leftovers: str.slice(result.match.length),
+      }))
+*/
+
+    // Sort results by score in descending order
+    const combinedResults = [...nameResults, ...aliasResults, ...symbolResults]
+      // .sort((a, b) => b.score - a.score)
+      .map(result => ({
+        match: result.result.measure,
+        score: result.score,
+        leftovers: str.slice(result.match.length),
+      }))
+
+    // console.log(
+    //   `measure str ${str} matches`,
+    //   combinedResults.map(
+    //     result =>
+    //       `${result.match.format(false, nameFormatter)} score ${result.score}${result.leftovers ? ` with leftovers ${result.leftovers}` : ``}`,
+    //   ),
+    // )
 
     return combinedResults
   }
 
   function getPrefixFnMatches(str: string): PrefixFnMatch[] {
-    // Match the string against the list of prefixes
+    // Match the string against the list of prefixes, this may include prefixes
+    // that can't be applied to the next measure, they will be filtered out at a later stage
 
     // Allow up to 2 transpositions
     const nameResults = prefixNames.match(str, 2)
 
     // Allow up to one case insensitivity
     const symbolResults = prefixSymbols.match(str, 0.5)
+    /*
+    // Deduplicate prefixes, use the highest scoring one
+    const prefixResultMap = new Map<RelaxedPrefixFn, (typeof nameResults)[number]>()
 
-    // Combine results and calculate scores
-    const combinedResults = [...nameResults, ...symbolResults].map(result => {
-      const remainingStr = str.slice(result.match.length)
+    for (const result of [...nameResults, ...symbolResults]) {
+      if (prefixResultMap.has(result.result.prefix)) {
+        const cached = prefixResultMap.get(result.result.prefix)!
 
-      return {
-        prefix: result.result.prefix as PrefixFn<any, any>,
-        score: result.score,
-        leftovers: remainingStr, // Adding leftovers property to match PrefixFnMatch type
+        // pick the highest scoring result
+        if (result.score > cached.score) {
+          prefixResultMap.set(result.result.prefix, result)
+        }
+
+        continue
       }
-    })
+
+      prefixResultMap.set(result.result.prefix, result)
+    }
 
     // Sort results by score in descending order
-    combinedResults.sort((a, b) => b.score - a.score)
+    const combinedResults = [...prefixResultMap.values()]
+      .sort((a, b) => b.score - a.score)
+      .map(result => ({
+        prefix: result.result.prefix as PrefixFn<any, any>,
+        score: result.score,
+        leftovers: str.slice(result.match.length),
+      }))
+*/
+
+    const combinedResults = [...nameResults, ...symbolResults.values()]
+      // .sort((a, b) => b.score - a.score)
+      .map(result => ({
+        prefix: result.result.prefix as PrefixFn<any, any>,
+        score: result.score,
+        leftovers: str.slice(result.match.length),
+      }))
+
+    // console.log(
+    //   `prefix str ${str} matches`,
+    //   combinedResults.map(
+    //     result =>
+    //       `${result.prefix.prefixName} score ${result.score}${result.leftovers ? ` with leftovers ${result.leftovers}` : ``}`,
+    //   ),
+    // )
 
     return combinedResults
   }
@@ -361,27 +350,90 @@ export function createAutoCompleter(
     // Split on "/", " per " and "p"
     const unparsedLevels = query.split(/\/| per |p/)
 
-    const levels: Tape[][] = []
+    // console.log(`autocomplete unparsedLevels:`, unparsedLevels)
 
+    const levels: Result[][] = []
+
+    /**
+     * Split on vertical delimiters first
+     * [millimeter kilograms] per [second]
+     * ^        ^
+     */
     for (const unparsedLevel of unparsedLevels) {
-      const initialTape: Tape = {
-        partials: [],
-        score: 1,
-        leftovers: unparsedLevel,
-        nextPrefix: null,
+      // Split on whitespace, remove zero-length slices, trimming the strings
+      const splitOnWhitespace = unparsedLevel.split(/\s+/).filter(slice => slice.length > 0)
+
+      const partialSuperpositions: PartialSuperposition[] = []
+
+      /**
+       * Split on horizontal delimiters next
+       * [millimeter] [kilograms] per [second]
+       * ^            ^               ^
+       */
+      // console.log(`autocomplete splitOnWhitespace:`, splitOnWhitespace)
+      for (const unparsedPartial of splitOnWhitespace) {
+        const initialPartial: Partial = {
+          score: 1,
+          leftovers: unparsedPartial,
+          prefix: undefined,
+          measure: undefined,
+          exponent: undefined,
+        }
+        const partialSuperposition = recursivelyParsePartial(initialPartial, getMeasureMatches, getPrefixFnMatches)
+
+        // Deduplicate identical superpositions
+
+        // console.log(
+        //   `parsed partial into following options`,
+        //   partialSuperposition.map(res => stringifyPartial(res)),
+        // )
+
+        partialSuperpositions.push(partialSuperposition)
       }
 
-      const levelOptions = recursivelyParse(initialTape, getMeasureMatches, getPrefixFnMatches)
+      // Also parse raw without split spaces
+      // partialSuperpositions.push(
+      //   recursivelyParsePartial(
+      //     {
+      //       score: 1,
+      //       leftovers: unparsedLevel.trim(),
+      //       prefix: undefined,
+      //       measure: undefined,
+      //       exponent: undefined,
+      //     },
+      //     getMeasureMatches,
+      //     getPrefixFnMatches,
+      //   ),
+      // )
 
-      // Split on whitespace
-      const whitespaceOptions = unparsedLevel.split(/\s+/)
+      // Build the possible results for this level
+      const levelResults: Result[] = combineLevelPartialSuperpositions(partialSuperpositions)
 
-      levels.push(levelOptions)
+      // console.log(
+      //   `parsed level into partialSuperPositions`,
+      //   levelResults.map(res => stringifyResult(res)),
+      // )
+
+      // Parse aliases without whitespace delimiting
+      const aliasMatched = measureAliases.match(unparsedLevel)
+      levelResults.push(
+        ...aliasMatched.map(result => ({
+          measure: result.result.measure,
+          score: result.score * 10,
+        })),
+      )
+
+      // Build each level of superpositions
+      levels.push(levelResults)
     }
 
     const results: Result[] = []
+    collapseLevelSuperpositions(results, levels, 0, [])
 
-    generateCombinations(results, levels, 0, [])
+    // console.log(
+    //   `final level superpositions`,
+    //   results.map(res => stringifyResult(res)),
+    // )
 
     // Deduplicate results based on their name
     const dedup = new Map<string, Result>()
@@ -402,46 +454,254 @@ export function createAutoCompleter(
     // Sort results by score in descending order
     results.sort((a, b) => b.score - a.score)
 
+    console.log(
+      `final predictions for query ${query}`,
+      results.map(result => stringifyResult(result)),
+    )
+
     return results
   }
 }
 
+const exponentiationWords = new Trie(
+  [
+    {
+      text: ["squared"],
+      exp: 2,
+    },
+    {
+      text: ["cubed"],
+      exp: 3,
+    },
+  ],
+  PERFECT_EXPONENT_WORD_MATCH,
+  PARTIAL_EXPONENT_WORD_MATCH,
+)
+
 function getExponentMatches(str: string): ExponentMatch[] {
   // Match the string against the list of prefixes
-  return []
+
+  // both ^2 and 'squared'
+
+  const matches: ExponentMatch[] = []
+
+  // Match ^2, ^3 etc
+  const powerMatch = str.match(/^\^(\d+)(.*)/)
+  if (powerMatch) {
+    matches.push({
+      exponent: parseInt(powerMatch[1], 10),
+      score: POWER_MATCH_SCORE,
+      leftovers: powerMatch[2],
+    })
+  }
+
+  // Match squared/cubed/etc
+  for (const result of exponentiationWords.match(str, 2)) {
+    matches.push({
+      exponent: result.result.exp,
+      score: result.score,
+      leftovers: str.slice(result.match.length),
+    })
+  }
+
+  // Match unicode superscript characters like ², ³, ¹², etc
+  const unicodeMatch = str.match(/^([¹²³⁴⁵⁶⁷⁸⁹⁰]+)(.*)/)
+  if (unicodeMatch) {
+    const digitMap: Record<string, string> = {
+      "⁰": "0",
+      "¹": "1",
+      "²": "2",
+      "³": "3",
+      "⁴": "4",
+      "⁵": "5",
+      "⁶": "6",
+      "⁷": "7",
+      "⁸": "8",
+      "⁹": "9",
+    }
+    const exponent = parseInt(
+      unicodeMatch[1]
+        .split("")
+        .map(c => digitMap[c])
+        .join(""),
+      10,
+    )
+    matches.push({
+      exponent,
+      score: POWER_MATCH_SCORE,
+      leftovers: unicodeMatch[2],
+    })
+  }
+
+  // console.log(`exponent match ${str}`, matches)
+
+  return matches
 }
 
-// Generate all possible combinations
-const generateCombinations = (
+/**
+ * Recursively generate all possible combinations of Results by combining levels with .over()
+ */
+function collapseLevelSuperpositions(
   results: Result[],
-  levels: Tape[][],
-  currentIndex: number,
-  currentCombination: Tape[],
-): void => {
-  if (currentIndex === levels.length) {
-    const result = combineOver(currentCombination)
-    if (result !== null) {
-      results.push(result)
+  levels: Result[][],
+  depth: number,
+  currentCombination: Result[],
+): void {
+  // All slots filled
+  if (depth === levels.length) {
+    // Need at least one level
+    if (currentCombination.length === 0) return
+
+    // Start with first level
+    let result = currentCombination[0]
+
+    // Combine with remaining levels using .over()
+    for (let i = 1; i < currentCombination.length; i++) {
+      const level = currentCombination[i]
+      result = {
+        measure: result.measure.over(level.measure),
+        score: result.score * level.score,
+      }
     }
+
+    results.push(result)
     return
   }
 
-  for (const option of levels[currentIndex]) {
-    generateCombinations(results, levels, currentIndex + 1, [...currentCombination, option])
+  // Try each option for the current level
+  const currentLevel = levels[depth]
+  for (const result of currentLevel) {
+    currentCombination[depth] = result
+    collapseLevelSuperpositions(results, levels, depth + 1, currentCombination)
   }
 }
 
-// Need a 'superposition' node that can be multiple measures given some conditional
-// temperature is a superposition of diff and thermo, but if it's multiplied or per'd, it collapses to difference
+function collapsePartialSuperpositions(
+  results: Result[],
+  partialSuperpositions: PartialSuperposition[],
+  depth: number,
+  currentCombination: Partial[],
+): void {
+  // All slots filled
+  if (depth === partialSuperpositions.length) {
+    // Try to assemble the combination into a result
+    const firstPartial = currentCombination[0]
+    if (!firstPartial) return
 
-// Need aliases in measures
+    let result: Result = assemblePartial(firstPartial)!
 
-// Superposition ° for deg, degrees
-// Superposition Δ for delta
+    if (!result) return
+
+    // Combine with remaining partials
+    for (let i = 1; i < currentCombination.length; i++) {
+      const partial = currentCombination[i]
+
+      // Apply exponents to the previous partial
+      if (partial.exponent) {
+        result = {
+          measure: result.measure.pow(partial.exponent),
+          score: result.score * partial.score,
+        }
+
+        continue
+      }
+
+      const nextResult = assemblePartial(partial)
+      if (!nextResult) return
+
+      result = {
+        measure: result.measure.times(nextResult.measure),
+        score: result.score * nextResult.score,
+      }
+    }
+
+    results.push(result)
+    return
+  }
+
+  // Try each option for the current slot
+  const currentSlot = partialSuperpositions[depth]
+  for (const partial of currentSlot) {
+    currentCombination[depth] = partial
+    collapsePartialSuperpositions(results, partialSuperpositions, depth + 1, currentCombination)
+  }
+}
+
+function combineLevelPartialSuperpositions(partialSuperpositions: PartialSuperposition[]): Result[] {
+  const results: Result[] = []
+  collapsePartialSuperpositions(results, partialSuperpositions, 0, [])
+  return results
+}
+
+function stringifyPartialSuperpositions(partialSuperpositions: PartialSuperposition[]) {
+  const combined = partialSuperpositions
+    .map(superpositions => {
+      const options = superpositions
+        .map(partial => {
+          const result = assemblePartial(partial)
+          if (!result) return null
+          return stringifyResult(result)
+        })
+        .filter(str => str !== null)
+        .join(", ")
+
+      return `[${options}]`
+    })
+    .join("\n")
+
+  return `[\n${combined}\n]`
+}
 
 function stringifyUnit(measure: Measure<any, any, any>) {
   const candidatePluralName = measure.format(true, nameFormatter)
   const candidateSymbol = measure.format(true, symbolFormatter)
 
   return `${candidatePluralName} (${candidateSymbol})`
+}
+
+function stringifyResult(result: Result) {
+  const candidatePluralName = result.measure.format(true, nameFormatter)
+  const candidateSymbol = result.measure.format(true, symbolFormatter)
+
+  return `${candidatePluralName} (${candidateSymbol}) score ${Math.round(result.score)}`
+}
+
+function assemblePartial(partial: Partial): Result | null {
+  if (!partial.measure) return null
+
+  const result: Result = {
+    measure: partial.measure,
+    score: partial.score,
+  }
+
+  if (partial.prefix) {
+    if (!partial.prefix.canApply(result.measure)) return null
+    result.measure = partial.prefix(result.measure)
+  }
+
+  if (partial.exponent !== undefined) {
+    result.measure = result.measure.pow(partial.exponent)
+  }
+
+  return result
+}
+
+function stringifyPartial(partial: Partial) {
+  if (!partial.prefix && !partial.measure && !partial.exponent) {
+    return `raw leftovers "${partial.leftovers}"`
+  }
+
+  if (partial.prefix && !partial.measure) {
+    return `prefix ${partial.prefix.prefixName} and leftovers "${partial.leftovers}"`
+  }
+
+  const res = assemblePartial(partial)
+  if (!res) return `invalid?`
+  const strRes = stringifyResult(res)
+
+  if (partial.leftovers !== "") {
+    return `${strRes} and leftovers "${partial.leftovers}"`
+  }
+
+  return `${strRes} no leftovers`
 }

@@ -34,7 +34,7 @@ const milli = Measure.prefix("milli", "m", 1e-3, ALLOW_SI_SUBMULTIPLE_PREFIX)
 const micro = Measure.prefix("micro", "µ", 1e-6, ALLOW_SI_SUBMULTIPLE_PREFIX)
 
 const meters = Measure.dimension(unitSystem, "length", "meter", "meters", "m", ALLOW_SI_PREFIX)
-const gram = Measure.dimension(unitSystem, "mass", "gram", "grams", "g", ALLOW_SI_PREFIX)
+const grams = Measure.dimension(unitSystem, "mass", "gram", "grams", "g", ALLOW_SI_PREFIX)
 const feet = Measure.from(0.3048, meters, "foot", "feet", "ft", DISALLOW_PREFIXES)
 const inches = Measure.from(1 / 12, feet, "inch", "inches", "in", DISALLOW_PREFIXES)
 
@@ -42,7 +42,7 @@ const seconds = Measure.dimension(unitSystem, "time", "second", "seconds", "s", 
 const minutes = Measure.from(60, seconds, "minute", "minutes", "m", DISALLOW_PREFIXES)
 const hours = Measure.from(60, minutes, "hour", "hours", "hr", DISALLOW_PREFIXES)
 
-const newtons = kilo(gram)
+const newtons = kilo(grams)
   .times(meters.per(seconds.squared()))
   .withIdentifiers("newton", "newtons", "N", ALLOW_SI_PREFIX)
 const joules = newtons.times(meters).withIdentifiers("joule", "joules", "J", ALLOW_SI_PREFIX)
@@ -131,8 +131,12 @@ const fahrenheit = Measure.offsetFrom(
 })
 
 const autocompleter = createAutoCompleter(
-  [meters, gram, feet, inches, seconds, minutes, hours, newtons, joules, kelvin, celsius, fahrenheit, bits, bytes],
-  [kilo, centi, milli, micro, kibi, mebi, gibi, tebi, pibi, exbi, zebi, yobi],
+  [meters, grams, feet, inches, seconds, minutes, hours, newtons, joules, kelvin, celsius, fahrenheit, bits, bytes],
+  [kilo, centi, milli, micro, kibi, mebi, gibi, tebi, pibi, exbi, zebi, yobi, mega],
+  [
+    { measure: celsius, text: ["Celsius", "degrees", "degrees C"] },
+    { measure: kilo(meters), text: ["k"] },
+  ],
 )
 
 const symbolFormatter = Measure.createMeasureFormatter()
@@ -162,6 +166,11 @@ describe("Autocomplete candidates", () => {
       top: 1,
     },
     {
+      queries: ["millimeter kilograms per second", "mm kg / s"],
+      candidate: milli(meters).times(kilo(grams)).per(seconds),
+      top: 1,
+    },
+    {
       queries: ["kph", "km/h", "kmph", "km/hr", "kilometers per hour", "km per hour"],
       candidate: kilo(meters).per(hours),
       top: 1,
@@ -183,12 +192,22 @@ describe("Autocomplete candidates", () => {
     },
     {
       queries: ["m/s^2", "m/s²", "meters per second squared"],
+      candidate: meters.per(seconds.squared()),
+      top: 1,
+    },
+    {
+      queries: ["m^2/s", "m²/s", "meters squared per second"],
       candidate: meters.squared().per(seconds),
       top: 1,
     },
     {
+      queries: ["meters sq", "meters squa", "meters squared"],
+      candidate: meters.squared(),
+      top: 1,
+    },
+    {
       queries: ["m^3/g", "m³/g", "meters cubed per gram"],
-      candidate: meters.cubed().per(gram),
+      candidate: meters.cubed().per(grams),
       top: 1,
     },
   ]
