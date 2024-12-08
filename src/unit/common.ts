@@ -41,28 +41,16 @@ export const celsius = Measure.offsetFrom(
   "degrees Celsius",
   "°C",
   NO_PREFIX_ALLOWED,
-).superposition((root, leaf) => {
-  if (root === leaf) {
-    return Measure.offsetFrom(
-      kelvin, //
-      1,
-      273.15,
-      "degree Celsius",
-      "degrees Celsius",
-      "°C",
-      NO_PREFIX_ALLOWED,
-    )
-  } else {
-    return Measure.from(
-      1,
-      kelvin, //
-      "degree Celsius difference",
-      "degrees Celsius difference",
-      "Δ°C",
-      NO_PREFIX_ALLOWED,
-    )
-  }
-})
+).redirectIfManipulated(
+  Measure.from(
+    1,
+    kelvin, //
+    "degree Celsius difference",
+    "degrees Celsius difference",
+    "Δ°C",
+    NO_PREFIX_ALLOWED,
+  ),
+)
 
 export const fahrenheit = Measure.offsetFrom(
   kelvin, //
@@ -72,25 +60,13 @@ export const fahrenheit = Measure.offsetFrom(
   "degrees Fahrenheit",
   "°F",
   NO_PREFIX_ALLOWED,
-).superposition((root, leaf) => {
-  if (root === leaf) {
-    return Measure.offsetFrom(
-      kelvin, //
-      5 / 9,
-      459.67,
-      "degree Fahrenheit",
-      "degrees Fahrenheit",
-      "°F",
-      NO_PREFIX_ALLOWED,
-    )
-  } else {
-    return Measure.from(
-      5 / 9,
-      kelvin, //
-      "degree Fahrenheit difference",
-      "degrees Fahrenheit difference",
-      "Δ°F",
-      NO_PREFIX_ALLOWED,
-    )
-  }
-})
+).redirectIfManipulated(
+  Measure.from(
+    5 / 9,
+    kelvin, //
+    "degree Fahrenheit difference",
+    "degrees Fahrenheit difference",
+    "Δ°F",
+    NO_PREFIX_ALLOWED,
+  ),
+)

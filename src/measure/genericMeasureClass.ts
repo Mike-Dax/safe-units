@@ -128,7 +128,13 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
         `${name}${this.namePlural}`,
         `${symbol}${this.symbol}`,
         NO_PREFIX_ALLOWED,
-        { type: "prefix", measure: this as GenericMeasure<N, any, any, any>, multiplier, name, symbol },
+        {
+          type: "prefix",
+          measure: this as GenericMeasure<N, any, any, any>,
+          multiplier,
+          name,
+          symbol,
+        },
       ) as unknown as GenericMeasure<N, Basis, U, IdentityMask<MarkMaskAsUsed<AllowedPrefixes>>>
     }
 
@@ -143,7 +149,11 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
         this.namePlural,
         this.symbol,
         NO_PREFIX_ALLOWED,
-        { type: "times", left: this as GenericMeasure<N, any, any, any>, right: other },
+        {
+          type: "times",
+          left: this as GenericMeasure<N, any, any, any>,
+          right: other,
+        },
       )
     }
 
@@ -160,7 +170,11 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
         this.namePlural,
         this.symbol,
         NO_PREFIX_ALLOWED,
-        { type: "over", left: this as GenericMeasure<N, any, any, any>, right: other },
+        {
+          type: "over",
+          left: this as GenericMeasure<N, any, any, any>,
+          right: other,
+        },
       )
     }
 
@@ -177,7 +191,11 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
         this.namePlural,
         this.symbol,
         NO_PREFIX_ALLOWED,
-        { type: "pow", measure: this as GenericMeasure<N, any, any, any>, power },
+        {
+          type: "pow",
+          measure: this as GenericMeasure<N, any, any, any>,
+          power,
+        },
       )
     }
 
@@ -190,7 +208,10 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
         this.namePlural,
         this.symbol,
         NO_PREFIX_ALLOWED,
-        { type: "reciprocal", measure: this as GenericMeasure<N, any, any, any> },
+        {
+          type: "reciprocal",
+          measure: this as GenericMeasure<N, any, any, any>,
+        },
       )
     }
 
@@ -297,6 +318,9 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
         root: GenericMeasure<N, Basis, U, AllowedPrefixes>,
         leaf: GenericMeasure<N, Basis, U, AllowedPrefixes>,
       ) => GenericMeasure<N, Basis, U, AllowedPrefixes>,
+
+    public redirectIfManipulated(
+      manipulated: GenericMeasure<N, Basis, U, AllowedPrefixes>,
     ): GenericMeasure<N, Basis, U, AllowedPrefixes> {
       const su = new Measure(
         this.coefficient,
@@ -306,7 +330,7 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
         this.namePlural,
         this.symbol,
         this.allowedPrefixes,
-        { type: "superposition", collapse },
+        { type: "superposition", manipulated, base: this as GenericMeasure<N, Basis, U, AllowedPrefixes> },
         this.constant, // this is the only operation that carries over the constant
       )
 
@@ -367,7 +391,10 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
           return formatter.leaf(plural, this)
         }
         case "superposition": {
-          return this.operation.collapse(root ?? thisGen, thisGen).format(plural, formatter)
+          if (root ?? thisGen === thisGen) {
+            return this.operation.base.format(plural, formatter)
+          }
+          return this.operation.manipulated.format(plural, formatter)
         }
         default: {
           throw new Error(`unimplemented operation`)
@@ -543,7 +570,10 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
 
       const valueFormatterArr = sortedMeasures.map((measure, index) =>
         index < sortedMeasures.length - 1
-          ? measure.createValueFormatter({ value: one, valueDisplay: "nearest" })
+          ? measure.createValueFormatter({
+              value: one,
+              valueDisplay: "nearest",
+            })
           : measure.createValueFormatter(valueFormat),
       )
 
@@ -572,7 +602,11 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
 
         let bucket = num.abs(value)
 
-        const result: { converted: N; formatted: string; measure: R | PR | T | O | PO | RE | PA }[] = []
+        const result: {
+          converted: N
+          formatted: string
+          measure: R | PR | T | O | PO | RE | PA
+        }[] = []
 
         for (let i = 0; i < sortedMeasures.length - 1; i++) {
           const convertedValue = converters[i](bucket)

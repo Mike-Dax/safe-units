@@ -12,17 +12,23 @@ export class Trie<R extends { text: string[] }> {
     private partialMatchScore: number,
   ) {}
 
-  public match(query: string, maxDistance = query.length): Result<R>[] {
+  public match(query: string, maxDistance = query.length, minimumLengthPartialPrefixMatch = 0): Result<R>[] {
     const results: Result<R>[] = []
 
     for (const item of this.contents) {
-      this.matchOne(query, item, maxDistance, results)
+      this.matchOne(query, item, maxDistance, results, minimumLengthPartialPrefixMatch)
     }
 
     return results
   }
 
-  private matchOne(query: string, potential: R, maxDistance: number, results: Result<R>[]): void {
+  private matchOne(
+    query: string,
+    potential: R,
+    maxDistance: number,
+    results: Result<R>[],
+    minimumLengthPartialPrefixMatch: number,
+  ): void {
     nextMatch: for (const potentialMatch of potential.text) {
       // Perfect prefix match
       if (query.startsWith(potentialMatch)) {
@@ -39,7 +45,7 @@ export class Trie<R extends { text: string[] }> {
       }
 
       // Partial prefix match
-      for (let i = potentialMatch.length; i > 0; i--) {
+      for (let i = potentialMatch.length; i > minimumLengthPartialPrefixMatch; i--) {
         if (query.startsWith(potentialMatch.slice(0, i))) {
           const score = mapLinear(i, 0, potentialMatch.length, 1, this.partialMatchScore)
 
@@ -60,6 +66,12 @@ export class Trie<R extends { text: string[] }> {
         const levenshteinDistance = levenshtein(query, potentialMatch, maxDistance)
 
         if (levenshteinDistance <= maxDistance) {
+          // Require first letter match (case insensitive)
+          // prevents things like meters becoming 'micrometers'
+          if (query[0].toLowerCase() !== potentialMatch[0].toLowerCase()) {
+            continue nextMatch
+          }
+
           //   console.log(`levenshtein match: ${query} is ${levenshteinDistance} off ${potentialMatch}`)
 
           // Remap the distance to a score between 1 and the partialMatchScore

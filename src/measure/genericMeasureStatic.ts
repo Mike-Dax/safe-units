@@ -4,7 +4,6 @@ import {
   PrefixFn,
   SpreadFn,
   wrapBinaryFn,
-  wrapUnaryFn,
   wrapReducerFn,
   ValidateAllowedPrefixes,
 } from "./genericMeasureUtils"

@@ -80,26 +80,15 @@ const celsius = Measure.offsetFrom(
   "degrees Celsius",
   "°C",
   DISALLOW_PREFIXES,
-).superposition((root, leaf) => {
-  if (root === leaf) {
-    return Measure.offsetFrom(
-      kelvin, //
-      1,
-      273.15,
-      "degree Celsius",
-      "degrees Celsius",
-      "°C",
-    )
-  } else {
-    return Measure.from(
-      1,
-      kelvin, //
-      "degree Celsius difference",
-      "degrees Celsius difference",
-      "Δ°C",
-    )
-  }
-})
+).redirectIfManipulated(
+  Measure.from(
+    1,
+    kelvin, //
+    "degree Celsius difference",
+    "degrees Celsius difference",
+    "Δ°C",
+  ),
+)
 
 const fahrenheit = Measure.offsetFrom(
   kelvin, //
@@ -109,26 +98,15 @@ const fahrenheit = Measure.offsetFrom(
   "degrees Fahrenheit",
   "°F",
   DISALLOW_PREFIXES,
-).superposition((root, leaf) => {
-  if (root === leaf) {
-    return Measure.offsetFrom(
-      kelvin, //
-      5 / 9,
-      459.67,
-      "degree Fahrenheit",
-      "degrees Fahrenheit",
-      "°F",
-    )
-  } else {
-    return Measure.from(
-      5 / 9,
-      kelvin, //
-      "degree Fahrenheit difference",
-      "degrees Fahrenheit difference",
-      "Δ°F",
-    )
-  }
-})
+).redirectIfManipulated(
+  Measure.from(
+    5 / 9,
+    kelvin, //
+    "degree Fahrenheit difference",
+    "degrees Fahrenheit difference",
+    "Δ°F",
+  ),
+)
 
 const autocompleter = createAutoCompleter(
   [meters, grams, feet, inches, seconds, minutes, hours, newtons, joules, kelvin, celsius, fahrenheit, bits, bytes],
@@ -201,7 +179,7 @@ describe("Autocomplete candidates", () => {
       top: 1,
     },
     {
-      queries: ["meters sq", "meters squa", "meters squared"],
+      queries: ["meters squa", "meters squared"],
       candidate: meters.squared(),
       top: 1,
     },

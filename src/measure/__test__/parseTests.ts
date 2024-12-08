@@ -1,17 +1,6 @@
 import { Measure } from "../numberMeasure"
 
-import {
-  meters,
-  grams,
-  seconds,
-  amperes,
-  kelvin,
-  moles,
-  candelas,
-  radians,
-  steradians,
-  bits,
-} from "../../unit"
+import { meters, grams, seconds, amperes, kelvin, moles, candelas, radians, steradians, bits } from "../../unit"
 import {
   hertz,
   newtons,

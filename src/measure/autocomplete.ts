@@ -495,8 +495,8 @@ function getExponentMatches(str: string): ExponentMatch[] {
     })
   }
 
-  // Match squared/cubed/etc
-  for (const result of exponentiationWords.match(str, 2)) {
+  // Match squared/cubed/etc, require at least a few letters though.
+  for (const result of exponentiationWords.match(str, 2, 3)) {
     matches.push({
       exponent: result.result.exp,
       score: result.score,
@@ -590,18 +590,29 @@ function collapsePartialSuperpositions(
 
     let result: Result = assemblePartial(firstPartial)!
 
+    let previousPartialHadExponent = !!firstPartial.exponent
+
     if (!result) return
 
     // Combine with remaining partials
     for (let i = 1; i < currentCombination.length; i++) {
       const partial = currentCombination[i]
+      previousPartialHadExponent = false
 
-      // Apply exponents to the previous partial
+      // Apply raw exponents to the previous partial
       if (partial.exponent) {
+        // meters squared can be parsed into meter [s]quared squared
+        // this rules that out entirely
+        if (previousPartialHadExponent) {
+          return
+        }
+
         result = {
           measure: result.measure.pow(partial.exponent),
           score: result.score * partial.score,
         }
+
+        previousPartialHadExponent = true
 
         continue
       }

@@ -93,11 +93,15 @@ describe("Number measures", () => {
     })
 
     it("max", () => {
-      expect(Measure.max(Measure.from(10, mps), Measure.from(5, mps), Measure.from(15, mps))).toEqual(Measure.from(15, mps))
+      expect(Measure.max(Measure.from(10, mps), Measure.from(5, mps), Measure.from(15, mps))).toEqual(
+        Measure.from(15, mps),
+      )
     })
 
     it("min", () => {
-      expect(Measure.min(Measure.from(10, mps), Measure.from(5, mps), Measure.from(15, mps))).toEqual(Measure.from(5, mps))
+      expect(Measure.min(Measure.from(10, mps), Measure.from(5, mps), Measure.from(15, mps))).toEqual(
+        Measure.from(5, mps),
+      )
     })
 
     it("round", () => {
@@ -105,7 +109,9 @@ describe("Number measures", () => {
     })
 
     it("sum", () => {
-      expect(Measure.sum(Measure.from(10, mps), Measure.from(5, mps), Measure.from(15, mps))).toEqual(Measure.from(30, mps))
+      expect(Measure.sum(Measure.from(10, mps), Measure.from(5, mps), Measure.from(15, mps))).toEqual(
+        Measure.from(30, mps),
+      )
     })
 
     it("trunc", () => {

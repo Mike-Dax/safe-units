@@ -42,11 +42,9 @@ export type MeasureOperation<N> =
       measure: GenericMeasure<N, any, any, any>
     }
   | {
-      type: "superposition" // given the root measure, return the next operation
-      collapse: (
-        root: GenericMeasure<N, any, any, any>,
-        leaf: GenericMeasure<N, any, any, any>,
-      ) => GenericMeasure<N, any, any, any>
+      type: "superposition" // for temperature vs temperature difference
+      manipulated: GenericMeasure<N, any, any, any>
+      base: GenericMeasure<N, any, any, any>
     }
 
 export interface MeasureFormatter<R, PR, T, O, PO, RE, PA> {
@@ -239,16 +237,16 @@ export interface GenericMeasure<N, Basis, U extends Unit<Basis>, AllowedPrefixes
   ): GenericMeasure<N, Basis, DivideUnits<Basis, U, V>, NO_PREFIX_ALLOWED>
 
   /**
-   * Create a superposition of this unit with different names. Only used for formatting of temperature Measures.
+   *
+   * If the measure is manipulated, redirect to a different measure (for display purposes only)
+   *
+   * Only used for formatting of temperature Measures.
    *
    * @param collapse a function that takes a root and leaf Measure, returns the collapsed measure.
    * @returns a new superposition measure
    */
-  superposition(
-    collapse: (
-      root: GenericMeasure<N, Basis, U, AllowedPrefixes>,
-      leaf: GenericMeasure<N, Basis, U, AllowedPrefixes>,
-    ) => GenericMeasure<N, Basis, U, AllowedPrefixes>,
+  redirectIfManipulated(
+    into: GenericMeasure<N, Basis, U, AllowedPrefixes>,
   ): GenericMeasure<N, Basis, U, AllowedPrefixes>
 
   /**

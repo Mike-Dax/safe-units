@@ -51,26 +51,15 @@ const celsius = Measure.offsetFrom(
   "degree Celsius",
   "degrees Celsius",
   "°C",
-).superposition((root, leaf) => {
-  if (root === leaf) {
-    return Measure.offsetFrom(
-      kelvin, //
-      1,
-      273.15,
-      "degree Celsius",
-      "degrees Celsius",
-      "°C",
-    )
-  } else {
-    return Measure.from(
-      1,
-      kelvin, //
-      "degree Celsius difference",
-      "degrees Celsius difference",
-      "Δ°C",
-    )
-  }
-})
+).redirectIfManipulated(
+  Measure.from(
+    1,
+    kelvin, //
+    "degree Celsius difference",
+    "degrees Celsius difference",
+    "Δ°C",
+  ),
+)
 
 const fahrenheit = Measure.offsetFrom(
   kelvin, //
@@ -79,25 +68,21 @@ const fahrenheit = Measure.offsetFrom(
   "degree Fahrenheit",
   "degrees Fahrenheit",
   "°F",
-).superposition((root, leaf) => {
-  if (root === leaf) {
-    return Measure.offsetFrom(
-      kelvin, //
-      5 / 9,
-      459.67,
-      "degree Fahrenheit",
-      "degrees Fahrenheit",
-      "°F",
-    )
-  } else {
-    return Measure.from(
-      5 / 9,
-      kelvin, //
-      "degree Fahrenheit difference",
-      "degrees Fahrenheit difference",
-      "Δ°F",
-    )
-  }
+).redirectIfManipulated(
+  Measure.from(
+    5 / 9,
+    kelvin, //
+    "degree Fahrenheit difference",
+    "degrees Fahrenheit difference",
+    "Δ°F",
+  ),
+)
+
+describe("Individual measure formatters", () => {
+  it(`matches the text`, () => {
+    //
+    // expect(results).toEqual(["blah"])
+  })
 })
 
 describe("Individual measure formatters", () => {
@@ -336,7 +321,10 @@ describe("Complex Formatting helpers", () => {
 
   it("meters to nearest 1 foot conversion", () => {
     const metersToNearestOneFoot = meters.createConverterTo(feet)
-    const valueFormatter = feet.createValueFormatter({ valueDisplay: "nearest", value: 1 })
+    const valueFormatter = feet.createValueFormatter({
+      valueDisplay: "nearest",
+      value: 1,
+    })
 
     const one = valueFormatter(metersToNearestOneFoot(1))
     const zero = valueFormatter(metersToNearestOneFoot(0))
@@ -351,7 +339,10 @@ describe("Complex Formatting helpers", () => {
 
   it("meters to nearest 0.25 feet conversion", () => {
     const converter = meters.createConverterTo(feet)
-    const valueFormatter = feet.createValueFormatter({ valueDisplay: "nearest", value: 0.25 })
+    const valueFormatter = feet.createValueFormatter({
+      valueDisplay: "nearest",
+      value: 0.25,
+    })
 
     const one = valueFormatter(converter(1))
     const onePointOne = valueFormatter(converter(1.1))
