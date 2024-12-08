@@ -725,6 +725,20 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
         return result
       }
     }
+
+    isCompatibleWith<M extends GenericMeasure<any, any, any, any>>(other: M) {
+      if (this.unitSystem !== other.unitSystem) {
+        return false
+      }
+
+      for (const dimension of this.unitSystem.getDimensions()) {
+        if (this.unit[dimension] !== other.unit[dimension]) {
+          return false
+        }
+      }
+
+      return true
+    }
   }
 
   return {

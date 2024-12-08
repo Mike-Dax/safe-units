@@ -379,6 +379,12 @@ export interface GenericMeasure<N, Basis, U extends Unit<Basis>, AllowedPrefixes
   gt(other: GenericMeasure<N, Basis, U, AllowedPrefixes>): boolean
 
   /**
+   * @param another measure with potentially the same unit
+   * @returns true if this measure is of the same measure as the other measure
+   */
+  isCompatibleWith<M extends GenericMeasure<any, any, any, any>>(other: M): boolean
+
+  /**
    * Formats a measure with a given value.
    *
    * Optionally takes a custom formatter. By default uses a symbol formatter.
