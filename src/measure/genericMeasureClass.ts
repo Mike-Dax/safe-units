@@ -4,6 +4,8 @@ import {
   NumericOperations,
   MeasureOperation,
   ValueFormatOptions,
+  SerialisedMeasure,
+  SerialisedMeasureOperation,
 } from "./genericMeasure"
 import { IdentityMask, MarkMaskAsUsed, NO_PREFIX_ALLOWED, PrefixMask } from "./prefixMask"
 import { UnitSystem } from "./unitSystem"
@@ -313,11 +315,86 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
       ) as unknown as GenericMeasure<N, Basis, U, AllowedPrefixes>
     }
 
-    public superposition(
-      collapse: (
-        root: GenericMeasure<N, Basis, U, AllowedPrefixes>,
-        leaf: GenericMeasure<N, Basis, U, AllowedPrefixes>,
-      ) => GenericMeasure<N, Basis, U, AllowedPrefixes>,
+    /**
+     * Serialise the measure into something that can be transferred over an IPC bridge
+     */
+    public serialise() {
+      let opSerialised: SerialisedMeasureOperation<N, Basis, U, AllowedPrefixes>
+
+      switch (this.operation.type) {
+        case "prefix": {
+          opSerialised = {
+            type: "prefix",
+            measure: this.operation.measure.serialise(),
+            multiplier: this.operation.multiplier,
+            name: this.operation.name,
+            symbol: this.operation.symbol,
+          }
+          break
+        }
+        case "times": {
+          opSerialised = {
+            type: "times",
+            left: this.operation.left.serialise(),
+            right: this.operation.right.serialise(),
+          }
+          break
+        }
+        case "over": {
+          opSerialised = {
+            type: "over",
+            left: this.operation.left.serialise(),
+            right: this.operation.right.serialise(),
+          }
+          break
+        }
+        case "pow": {
+          opSerialised = {
+            type: "pow",
+            measure: this.operation.measure.serialise(),
+            power: this.operation.power,
+          }
+          break
+        }
+        case "reciprocal": {
+          opSerialised = {
+            type: "reciprocal",
+            measure: this.operation.measure.serialise(),
+          }
+          break
+        }
+        case "leaf": {
+          opSerialised = {
+            type: "leaf",
+            // Don't need to include the measure, since it's _this_
+          }
+          break
+        }
+        case "superposition": {
+          opSerialised = {
+            type: "superposition",
+            manipulated: this.operation.manipulated.serialise(),
+            base: this.operation.base.serialise(),
+          }
+          break
+        }
+        default: {
+          throw new Error(`unimplemented operation`)
+        }
+      }
+
+      return {
+        coefficient: this.coefficient,
+        unit: this.unit,
+        unitSystem: this.unitSystem,
+        nameSingular: this.nameSingular,
+        namePlural: this.namePlural,
+        symbol: this.symbol,
+        allowedPrefixes: this.allowedPrefixes,
+        operation: opSerialised,
+        constant: this.constant,
+      } as SerialisedMeasure<N, Basis, U, AllowedPrefixes>
+    }
 
     public redirectIfManipulated(
       manipulated: GenericMeasure<N, Basis, U, AllowedPrefixes>,
@@ -330,7 +407,7 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
         this.namePlural,
         this.symbol,
         this.allowedPrefixes,
-        { type: "superposition", manipulated, base: this as GenericMeasure<N, Basis, U, AllowedPrefixes> },
+        { type: "superposition", manipulated, base: this.clone() as GenericMeasure<N, Basis, U, AllowedPrefixes> },
         this.constant, // this is the only operation that carries over the constant
       )
 
@@ -391,9 +468,10 @@ export function createMeasureClass<N>(num: NumericOperations<N>): GenericMeasure
           return formatter.leaf(plural, this)
         }
         case "superposition": {
-          if (root ?? thisGen === thisGen) {
+          if ((root ?? thisGen) === thisGen) {
             return this.operation.base.format(plural, formatter)
           }
+
           return this.operation.manipulated.format(plural, formatter)
         }
         default: {

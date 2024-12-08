@@ -1,4 +1,10 @@
-import { GenericMeasure, MeasureFormatter, NumericOperations } from "./genericMeasure"
+import {
+  GenericMeasure,
+  MeasureFormatter,
+  MeasureOperation,
+  NumericOperations,
+  SerialisedMeasure,
+} from "./genericMeasure"
 import { createMeasureClass } from "./genericMeasureClass"
 import { GenericMeasureStatic, getGenericMeasureStaticMethods } from "./genericMeasureStatic"
 import { PrefixMask } from "./prefixMask"
@@ -58,6 +64,11 @@ interface GenericMeasureFactory<N> {
     symbol: string,
     allowedPrefixes?: OverridingAllowedPrefixes,
   ): GenericMeasure<N, Basis, U, OverridingAllowedPrefixes>
+
+  /** Take a serialised blob and turn it into a Measure */
+  deserialise<Basis, U extends Unit<Basis>, AllowedPrefixes extends PrefixMask>(
+    blob: SerialisedMeasure<any, any, any, any>,
+  ): GenericMeasure<N, Basis, U, AllowedPrefixes>
 
   /**
    * Creates a measure as a multiple of another measure, with an offset.
@@ -181,7 +192,82 @@ export function createMeasureType<N, S extends {} = {}>(
 
       return base
     },
+    deserialise: blob => {
+      const m = createMeasure(
+        blob.coefficient,
+        blob.unit,
+        blob.unitSystem,
+        blob.nameSingular,
+        blob.namePlural,
+        blob.symbol,
+        blob.allowedPrefixes,
+        blob.constant,
+      )
 
+      switch (blob.operation.type) {
+        case "prefix": {
+          ;(m as any).operation = {
+            type: "prefix",
+            measure: common.deserialise(blob.operation.measure),
+            multiplier: blob.operation.multiplier,
+            name: blob.operation.name,
+            symbol: blob.operation.symbol,
+          } satisfies MeasureOperation<N>
+          break
+        }
+        case "times": {
+          ;(m as any).operation = {
+            type: "times",
+            left: common.deserialise(blob.operation.left),
+            right: common.deserialise(blob.operation.right),
+          } satisfies MeasureOperation<N>
+          break
+        }
+        case "over": {
+          ;(m as any).operation = {
+            type: "over",
+            left: common.deserialise(blob.operation.left),
+            right: common.deserialise(blob.operation.right),
+          } satisfies MeasureOperation<N>
+          break
+        }
+        case "pow": {
+          ;(m as any).operation = {
+            type: "pow",
+            measure: common.deserialise(blob.operation.measure),
+            power: blob.operation.power,
+          } satisfies MeasureOperation<N>
+          break
+        }
+        case "reciprocal": {
+          ;(m as any).operation = {
+            type: "reciprocal",
+            measure: common.deserialise(blob.operation.measure),
+          } satisfies MeasureOperation<N>
+          break
+        }
+        case "leaf": {
+          ;(m as any).operation = {
+            type: "leaf",
+            measure: m, // circularly reference the measure for the leaf
+          } satisfies MeasureOperation<N>
+          break
+        }
+        case "superposition": {
+          ;(m as any).operation = {
+            type: "superposition",
+            manipulated: common.deserialise(blob.operation.manipulated),
+            base: common.deserialise(blob.operation.base),
+          } satisfies MeasureOperation<N>
+          break
+        }
+        default: {
+          throw new Error(`unimplemented operation`)
+        }
+      }
+
+      return m
+    },
     createMeasureFormatter: (options = {}) => {
       const optionsWithDefaults = {
         unitText: "symbol",

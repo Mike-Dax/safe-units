@@ -10,6 +10,55 @@ import {
   UnitToPower,
 } from "./unitTypeArithmetic"
 
+export type SerialisedMeasure<N, Basis, U extends Unit<Basis>, AllowedPrefixes extends PrefixMask> = {
+  coefficient: N
+  unit: U
+  unitSystem: UnitSystem<Basis>
+  nameSingular: string
+  namePlural: string
+  symbol: string
+  allowedPrefixes: AllowedPrefixes
+  operation: SerialisedMeasureOperation<N, Basis, U, AllowedPrefixes>
+  constant: N
+}
+
+export type SerialisedMeasureOperation<N, Basis, U extends Unit<Basis>, AllowedPrefixes extends PrefixMask> =
+  | {
+      type: "prefix"
+      measure: SerialisedMeasure<N, Basis, U, AllowedPrefixes>
+      multiplier: N
+      name: string
+      symbol: string
+    }
+  | {
+      type: "times"
+      left: SerialisedMeasure<N, Basis, U, AllowedPrefixes>
+      right: SerialisedMeasure<N, Basis, U, AllowedPrefixes>
+    }
+  | {
+      type: "over"
+      left: SerialisedMeasure<N, Basis, U, AllowedPrefixes>
+      right: SerialisedMeasure<N, Basis, U, AllowedPrefixes>
+    }
+  | {
+      type: "pow"
+      measure: SerialisedMeasure<N, Basis, U, AllowedPrefixes>
+      power: number
+    }
+  | {
+      type: "reciprocal" // unsure how to represent this with text?
+      measure: SerialisedMeasure<N, Basis, U, AllowedPrefixes>
+    }
+  | {
+      type: "leaf" // the leaf measure is a cyclical reference to `this`
+      // measure: SerialisedMeasure<N, Basis, U, AllowedPrefixes>
+    }
+  | {
+      type: "superposition" // for temperature vs temperature difference
+      manipulated: SerialisedMeasure<N, Basis, U, AllowedPrefixes>
+      base: SerialisedMeasure<N, Basis, U, AllowedPrefixes>
+    }
+
 export type MeasureOperation<N> =
   | {
       type: "prefix"
@@ -375,6 +424,9 @@ export interface GenericMeasure<N, Basis, U extends Unit<Basis>, AllowedPrefixes
 
   /** Shallow copies this measure instance. */
   clone(): GenericMeasure<N, Basis, U, AllowedPrefixes>
+
+  /** Serialise a measure. */
+  serialise(): SerialisedMeasure<N, Basis, U, AllowedPrefixes>
 
   /** Creates a converter function that converts a value of this Measure to a value in another measure. */
   createConverterTo(unit: GenericMeasure<N, Basis, U, any>): (value: N) => N
