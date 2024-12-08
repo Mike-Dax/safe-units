@@ -1,4 +1,5 @@
 import { createAutoCompleter, Result } from "../autocomplete"
+import { GenericMeasure } from "../genericMeasure"
 import { Measure } from "../numberMeasure"
 import { UnitSystem } from "../unitSystem"
 
@@ -25,6 +26,7 @@ const unitSystem = UnitSystem.from({
   time: "s",
   temperature: "K",
   memory: "b",
+  substance: "mol",
 })
 
 const mega = Measure.prefix("mega", "M", 1e6, ALLOW_SI_MULTIPLE_PREFIX)
@@ -35,6 +37,7 @@ const micro = Measure.prefix("micro", "µ", 1e-6, ALLOW_SI_SUBMULTIPLE_PREFIX)
 
 const meters = Measure.dimension(unitSystem, "length", "meter", "meters", "m", ALLOW_SI_PREFIX)
 const grams = Measure.dimension(unitSystem, "mass", "gram", "grams", "g", ALLOW_SI_PREFIX)
+const moles = Measure.dimension(unitSystem, "substance", "mole", "moles", "mol", ALLOW_SI_PREFIX)
 const feet = Measure.from(0.3048, meters, "foot", "feet", "ft", DISALLOW_PREFIXES)
 const inches = Measure.from(1 / 12, feet, "inch", "inches", "in", DISALLOW_PREFIXES)
 
@@ -109,7 +112,23 @@ const fahrenheit = Measure.offsetFrom(
 )
 
 const autocompleter = createAutoCompleter(
-  [meters, grams, feet, inches, seconds, minutes, hours, newtons, joules, kelvin, celsius, fahrenheit, bits, bytes],
+  [
+    meters,
+    grams,
+    feet,
+    inches,
+    seconds,
+    minutes,
+    hours,
+    newtons,
+    joules,
+    kelvin,
+    celsius,
+    fahrenheit,
+    bits,
+    bytes,
+    moles,
+  ],
   [kilo, centi, milli, micro, kibi, mebi, gibi, tebi, pibi, exbi, zebi, yobi, mega],
   [
     { measure: celsius, text: ["Celsius", "degrees", "degrees C"] },
@@ -129,9 +148,10 @@ const nameFormatter = Measure.createMeasureFormatter({
 describe("Autocomplete candidates", () => {
   const corpus: {
     queries: string[]
-    candidate: Measure<any, any, any>
+    candidate: GenericMeasure<any, any, any, any>
     top?: number
-    nonCandidates?: Measure<any, any, any>[]
+    nonCandidates?: GenericMeasure<any, any, any, any>[]
+    compatibleWith?: GenericMeasure<any, any, any, any>
   }[] = [
     {
       queries: ["m", "meter", "metre", "meters", "metres"],
@@ -141,6 +161,12 @@ describe("Autocomplete candidates", () => {
     {
       queries: ["mm", "millimeter", "millimetre", "millimeters", "millimetres", "millime", "millimete"],
       candidate: milli(meters),
+      top: 1,
+    },
+    {
+      queries: ["m"],
+      candidate: moles,
+      compatibleWith: moles,
       top: 1,
     },
     {
@@ -192,8 +218,8 @@ describe("Autocomplete candidates", () => {
 
   for (const example of corpus) {
     for (const query of example.queries) {
-      it(`predicts ${stringifyUnit(example.candidate)} ${example.top ? `in top ${example.top} result${example.top > 1 ? "s" : ""} ` : ``}for query "${query}"`, () => {
-        const results = autocompleter(query)
+      it(`predicts ${stringifyUnit(example.candidate)} ${example.top ? `in top ${example.top} result${example.top > 1 ? "s" : ""} ` : ``}for query "${query}"${example.compatibleWith ? ` restricting to compatibility with ${example.compatibleWith.namePlural}` : ""}`, () => {
+        const results = autocompleter(query, example.compatibleWith)
 
         if (results.length === 0) {
           throw new Error(`No results`)

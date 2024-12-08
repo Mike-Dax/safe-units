@@ -193,7 +193,13 @@ export function createAutoCompleter(
   prefixes: RelaxedPrefixFn[],
   // Aliases must match a measure in the measures list
   aliases?: MeasureAlias<any, any, any, any>[],
-): (query: string) => Result[] {
+): (
+  query: string,
+  /**
+   * Results must be compatible with this measure.
+   */
+  compatibleWith?: GenericMeasure<any, any, any, any>,
+) => Result[] {
   // Setup state that will be re-used between queries
 
   // Build a prefix Trie for measure names
@@ -346,7 +352,13 @@ export function createAutoCompleter(
     return combinedResults
   }
 
-  return query => {
+  return (
+    query: string,
+    /**
+     * Results must be compatible with this measure.
+     */
+    compatibleWith?: GenericMeasure<any, any, any, any>,
+  ) => {
     // Split on "/", " per " and "p"
     const unparsedLevels = query.split(/\/| per |p/)
 
@@ -427,7 +439,7 @@ export function createAutoCompleter(
       levels.push(levelResults)
     }
 
-    const results: Result[] = []
+    let results: Result[] = []
     collapseLevelSuperpositions(results, levels, 0, [])
 
     // console.log(
@@ -454,8 +466,14 @@ export function createAutoCompleter(
     // Sort results by score in descending order
     results.sort((a, b) => b.score - a.score)
 
+    const before = results.length
+
+    if (compatibleWith) {
+      results = results.filter(result => result.measure.isCompatibleWith(compatibleWith))
+    }
+
     console.log(
-      `final predictions for query ${query}`,
+      `${results.length} final predictions for query ${query} down from ${before}`,
       results.map(result => stringifyResult(result)),
     )
 
